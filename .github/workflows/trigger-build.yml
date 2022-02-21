@@ -31,6 +31,7 @@ jobs:
           committer: cloudkitebot <henrywangxf1@gmail.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           branch: cpr
+          branch-suffix: random
           delete-branch: true
           title: "OSTree Repo - ${{ steps.date.outputs.date }}"
           body: |
