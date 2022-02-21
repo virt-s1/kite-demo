@@ -9,14 +9,14 @@ on:
 jobs:
   ostree-virt:
     if: ${{ github.event.issue.pull_request &&
-            (startsWith(github.event.comment.body, /test') || startsWith(github.event.comment.body, /test-rhel-8-6') || startsWith(github.event.comment.body, /test-rhel-8-6-ostree-virt')) }}
+            (startsWith(github.event.comment.body, '/test') || startsWith(github.event.comment.body, '/test-rhel-8-6') || startsWith(github.event.comment.body, '/test-rhel-8-6-ostree-virt')) }}
     runs-on: ubuntu-latest
     steps:
       - run: echo "Run ostree.sh script"
 
   ostree-ng-virt:
     if: ${{ github.event.issue.pull_request &&
-            (startsWith(github.event.comment.body, /test') || startsWith(github.event.comment.body, /test-rhel-8-6') || startsWith(github.event.comment.body, /test-rhel-8-6-ostree--ng-virt')) }}
+            (startsWith(github.event.comment.body, '/test') || startsWith(github.event.comment.body, '/test-rhel-8-6') || startsWith(github.event.comment.body, '/test-rhel-8-6-ostree--ng-virt')) }}
     runs-on: ubuntu-latest
     steps:
       - run: echo "Run ostree-ng.sh script"
