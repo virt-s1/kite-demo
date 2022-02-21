@@ -7,18 +7,83 @@ on:
       - created
 
 jobs:
+  pr-test:
+    if: ${{ github.event.issue.pull_request &&
+            (startsWith(github.event.comment.body, '/build') || startsWith(github.event.comment.body, '/build-rhel-9-0') || startsWith(github.event.comment.body, '/build-rhel-9-0-normal')) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get information for pull request
+        uses: octokit/request-action@v2.x
+        id: pr-api
+        with:
+          route: GET /repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+    outputs:
+        sha: ${{ fromJson(steps.pr-api.outputs.data).head.sha }}
+
   normal:
+    needs: pr-test
     if: ${{ github.event.issue.pull_request &&
             (startsWith(github.event.comment.body, '/build') || startsWith(github.event.comment.body, '/build-rhel-9-0') || startsWith(github.event.comment.body, '/build-rhel-9-0-normal')) }}
     runs-on: ubuntu-latest
     # runs-on: [rhos-01, rhel-9-0, standard-medium]
+    env:
+      STATUS_NAME: normal
+
     steps:
+      - name: Create in-progress status
+        uses: octokit/request-action@v2.x
+        with:
+          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-test.outputs.sha }}'
+          context: ${{ env.STATUS_NAME }}
+          state: pending
+          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+
       - run: echo "Setup normal kernel ostree repo"
 
+      - name: Set result status
+        if: always()
+        uses: octokit/request-action@v2.x
+        with:
+          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
+          context: ${{ env.STATUS_NAME }}
+          state: ${{ job.status }}
+          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+
   rt:
+    needs: pr-test
     if: ${{ github.event.issue.pull_request &&
             (startsWith(github.event.comment.body, '/build') || startsWith(github.event.comment.body, '/build-rhel-9-0') || startsWith(github.event.comment.body, '/build-rhel-9-0-rt')) }}
     runs-on: ubuntu-latest
     # runs-on: [rhos-01, rhel-9-0, standard-medium]
+    env:
+      STATUS_NAME: rt
+
     steps:
+      - name: Create in-progress status
+        uses: octokit/request-action@v2.x
+        with:
+          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-test.outputs.sha }}'
+          context: ${{ env.STATUS_NAME }}
+          state: pending
+          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+
       - run: echo "Setup rt kernel ostree repo"
+
+      - name: Set result status
+        if: always()
+        uses: octokit/request-action@v2.x
+        with:
+          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
+          context: ${{ env.STATUS_NAME }}
+          state: ${{ job.status }}
+          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
