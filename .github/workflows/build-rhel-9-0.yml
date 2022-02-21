@@ -1,0 +1,24 @@
+---
+name: Setup RHEL 9.0.0 OSTree Repo
+
+on:
+  issue_comment:
+    types:
+      - created
+
+jobs:
+  normal:
+    if: ${{ github.event.issue.pull_request &&
+            (startsWith(github.event.comment.body, '/build') || startsWith(github.event.comment.body, '/build-rhel-9-0') || startsWith(github.event.comment.body, '/build-rhel-9-0-normal')) }}
+    runs-on: ubuntu-latest
+    # runs-on: [rhos-01, rhel-9-0, standard-medium]
+    steps:
+      - run: echo "Setup normal kernel ostree repo"
+
+  rt:
+    if: ${{ github.event.issue.pull_request &&
+            (startsWith(github.event.comment.body, '/build') || startsWith(github.event.comment.body, '/build-rhel-9-0') || startsWith(github.event.comment.body, '/build-rhel-9-0-rt')) }}
+    runs-on: ubuntu-latest
+    # runs-on: [rhos-01, rhel-9-0, standard-medium]
+    steps:
+      - run: echo "Setup rt kernel ostree repo"

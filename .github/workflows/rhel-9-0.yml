@@ -1,0 +1,24 @@
+---
+name: Run Edge Test on RHEL 9.0.0
+
+on:
+  issue_comment:
+    types:
+      - created
+
+jobs:
+  ostree-virt:
+    if: ${{ github.event.issue.pull_request &&
+            (startsWith(github.event.comment.body, /test') || startsWith(github.event.comment.body, /test-rhel-9-0') || startsWith(github.event.comment.body, /test-rhel-9-0-ostree-virt')) }}
+    runs-on: ubuntu-latest
+    # runs-on: [rhos-01, rhel-9-0, standard-medium]
+    steps:
+      - run: echo "Run ostree.sh script"
+
+  ostree-ng-virt:
+    if: ${{ github.event.issue.pull_request &&
+            (startsWith(github.event.comment.body, /test') || startsWith(github.event.comment.body, /test-rhel-9-0') || startsWith(github.event.comment.body, /test-rhel-9-0-ostree--ng-virt')) }}
+    runs-on: ubuntu-latest
+    # runs-on: [rhos-01, rhel-9-0, standard-medium]
+    steps:
+      - run: echo "Run ostree-ng.sh script"
