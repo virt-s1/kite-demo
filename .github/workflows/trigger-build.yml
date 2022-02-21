@@ -38,6 +38,14 @@ jobs:
             - Date: ${{ steps.date.outputs.date }}
             - Commit URL: http://edge-rhel-9-0-normal-virt-qe-3rd.apps.ocp4.prod.psi.redhat.com/repo/refs/heads/rhel/9/x86_64/edge
 
+      - name: Enable Pull Request Automerge
+        if: steps.cpr.outputs.pull-request-operation == 'created'
+        uses: peter-evans/enable-pull-request-automerge@v1
+        with:
+          token: ${{ secrets.PAT }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: squash
+
       - name: Add a comment to trigger build workflow
         uses: peter-evans/create-or-update-comment@v1
         with:
