@@ -1,15 +1,15 @@
 ---
-name: Trigger Hub of All Tests
+name: Trigger hub of setup ostree repo
 
 on:
   repository_dispatch:
-    types: [test, build]
+    types: [build]
   schedule:
     - cron: '5 2 * * *'
 
 jobs:
   rhel-9-0:
-    if: ${{ github.event.schedule != '5 2 * * *' ||
+    if: ${{ github.event.schedule == '5 2 * * *' ||
             (github.event.event_type == 'build' && contains(github.event.client_payload.distro, 'rhel-9-0')) }}
     runs-on: ubuntu-latest
     steps:
