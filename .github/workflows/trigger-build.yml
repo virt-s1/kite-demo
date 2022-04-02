@@ -8,8 +8,33 @@ on:
     - cron: '5 2 * * *'
 
 jobs:
+  pr-info:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query author repository permissions
+        uses: octokit/request-action@v2.x
+        id: user_permission
+        with:
+          route: GET /repos/${{ github.repository }}/collaborators/${{ github.event.sender.login }}/permission
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # restrict running of tests to users with admin or write permission for the repository
+      # see https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#get-repository-permissions-for-a-user
+      # store output if user is allowed in allowed_user job output so it has to be checked in downstream job
+      - name: Check if user does have correct permissions
+        if: contains('admin write', fromJson(steps.user_permission.outputs.data).permission)
+        id: check_user_perm
+        run: |
+          echo "User '${{ github.event.sender.login }}' has permission '${{ fromJson(steps.user_permission.outputs.data).permission }}' allowed values: 'admin', 'write'"
+          echo "::set-output name=allowed_user::true"
+
+    outputs:
+      allowed_user: ${{ steps.check_user_perm.outputs.allowed_user }}
+
   rhel-9-0:
-    if: ${{ github.event.schedule == '5 2 * * *' || contains(github.event.client_payload.distro, 'rhel-9-0') }}
+    needs: pr-info
+    if: ${{ needs.pr-info.outputs.allowed_user == 'true' && (github.event.schedule == '5 2 * * *' || contains(github.event.client_payload.distro, 'rhel-9-0')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -25,7 +50,7 @@ jobs:
         id: cpr
         uses: peter-evans/create-pull-request@v3
         with:
-          token: ${{ secrets.PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "Setup RHEL 9.0 ostree repo on ${{ steps.date.outputs.date }}"
           committer: cloudkitebot <henrywangxf1@gmail.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
@@ -48,7 +73,7 @@ jobs:
       - name: Create a project card to track build result
         uses: peter-evans/create-or-update-project-card@v1
         with:
-          token: ${{ secrets.PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           project-name: Build OSTree Repo
           column-name: RHEL-9-0
           issue-number: ${{ steps.cpr.outputs.pull-request-number }}

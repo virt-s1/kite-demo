@@ -7,25 +7,42 @@ on:
       - created
 
 jobs:
-  pr-test:
+  pr-info:
     if: ${{ github.event.issue.pull_request &&
             (startsWith(github.event.comment.body, '/build') || startsWith(github.event.comment.body, '/build-rhel-9-0') || startsWith(github.event.comment.body, '/build-rhel-9-0-normal')) }}
     runs-on: ubuntu-latest
     steps:
+      - name: Query author repository permissions
+        uses: octokit/request-action@v2.x
+        id: user_permission
+        with:
+          route: GET /repos/${{ github.repository }}/collaborators/${{ github.event.sender.login }}/permission
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # restrict running of tests to users with admin or write permission for the repository
+      # see https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#get-repository-permissions-for-a-user
+      - name: Check if user does have correct permissions
+        if: contains('admin write', fromJson(steps.user_permission.outputs.data).permission)
+        id: check_user_perm
+        run: |
+          echo "User '${{ github.event.sender.login }}' has permission '${{ fromJson(steps.user_permission.outputs.data).permission }}' allowed values: 'admin', 'write'"
+          echo "::set-output name=allowed_user::true"
       - name: Get information for pull request
         uses: octokit/request-action@v2.x
         id: pr-api
         with:
           route: GET /repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     outputs:
-        sha: ${{ fromJson(steps.pr-api.outputs.data).head.sha }}
+      allowed_user: ${{ steps.check_user_perm.outputs.allowed_user }}
+      sha: ${{ fromJson(steps.pr-api.outputs.data).head.sha }}
 
   normal:
-    needs: pr-test
-    if: ${{ github.event.issue.pull_request &&
-            (startsWith(github.event.comment.body, '/build') || startsWith(github.event.comment.body, '/build-rhel-9-0') || startsWith(github.event.comment.body, '/build-rhel-9-0-normal')) }}
+    needs: pr-info
+    if: ${{ needs.pr-info.outputs.allowed_user == 'true' }}
     runs-on: ubuntu-latest
     # runs-on: [rhos-01, rhel-9-0, standard-medium]
     env:
@@ -35,30 +52,35 @@ jobs:
       - name: Create in-progress status
         uses: octokit/request-action@v2.x
         with:
-          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-test.outputs.sha }}'
+          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
           context: ${{ env.STATUS_NAME }}
           state: pending
           target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - run: echo "Setup normal kernel ostree repo"
+      - name: Clone repository
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ needs.pr-info.outputs.sha }}
+          fetch-depth: 0
+
+      - run: cat rhel-9-0-image-build.log
 
       - name: Set result status
         if: always()
         uses: octokit/request-action@v2.x
         with:
-          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-test.outputs.sha }}'
+          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
           context: ${{ env.STATUS_NAME }}
           state: ${{ job.status }}
           target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   rt:
-    needs: pr-test
-    if: ${{ github.event.issue.pull_request &&
-            (startsWith(github.event.comment.body, '/build') || startsWith(github.event.comment.body, '/build-rhel-9-0') || startsWith(github.event.comment.body, '/build-rhel-9-0-rt')) }}
+    needs: pr-info
+    if: ${{ needs.pr-info.outputs.allowed_user == 'true' }}
     runs-on: ubuntu-latest
     # runs-on: [rhos-01, rhel-9-0, standard-medium]
     env:
@@ -68,22 +90,28 @@ jobs:
       - name: Create in-progress status
         uses: octokit/request-action@v2.x
         with:
-          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-test.outputs.sha }}'
+          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
           context: ${{ env.STATUS_NAME }}
           state: pending
           target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - run: echo "Setup rt kernel ostree repo"
+      - name: Clone repository
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ needs.pr-info.outputs.sha }}
+          fetch-depth: 0
+
+      - run: cat rhel-9-0-image-build.log
 
       - name: Set result status
         if: always()
         uses: octokit/request-action@v2.x
         with:
-          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-test.outputs.sha }}'
+          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
           context: ${{ env.STATUS_NAME }}
           state: ${{ job.status }}
           target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
