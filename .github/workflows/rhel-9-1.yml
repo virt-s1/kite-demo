@@ -47,6 +47,7 @@ jobs:
       sha: ${{ fromJson(steps.pr-api.outputs.data).head.sha }}
 
   ostree-virt:
+    needs: pr-info
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
             (endsWith(github.event.comment.body, '/test-rhel-9-1') ||
             endsWith(github.event.comment.body, '/test-rhel-9-1-virt')) }}
@@ -83,6 +84,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   ostree-ng-virt:
+    needs: pr-info
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
             (endsWith(github.event.comment.body, '/test-rhel-9-1') ||
             endsWith(github.event.comment.body, '/test-rhel-9-1-ng')) }}

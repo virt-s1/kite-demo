@@ -48,13 +48,13 @@ jobs:
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "${{ github.event.client_payload.compose_id }} test - ${{ steps.date.outputs.date }}"
+          commit-message: "${{ github.event.client_payload.compose_id }} - ${{ steps.date.outputs.date }}"
           committer: cloudkitebot <henrywangxf1@gmail.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           branch: cpr
           branch-suffix: random
           delete-branch: true
-          title: "${{ github.event.client_payload.compose_id }} test - ${{ steps.date.outputs.date }}"
+          title: "${{ github.event.client_payload.compose_id }} - ${{ steps.date.outputs.date }}"
           body: |
             RHEL compose ${{ github.event.client_payload.compose_id }}
             - Date: ${{ steps.date.outputs.date }}
@@ -94,13 +94,13 @@ jobs:
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "${{ github.event.client_payload.compose_id }} test - ${{ steps.date.outputs.date }}"
+          commit-message: "${{ github.event.client_payload.compose_id }} - ${{ steps.date.outputs.date }}"
           committer: cloudkitebot <henrywangxf1@gmail.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           branch: cpr
           branch-suffix: random
           delete-branch: true
-          title: "${{ github.event.client_payload.compose_id }} test - ${{ steps.date.outputs.date }}"
+          title: "${{ github.event.client_payload.compose_id }} - ${{ steps.date.outputs.date }}"
           body: |
             RHEL compose ${{ github.event.client_payload.compose_id }}
             - Date: ${{ steps.date.outputs.date }}
@@ -144,13 +144,13 @@ jobs:
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "${{ steps.compose_id.outputs.compose_id }} test - ${{ steps.date.outputs.date }}"
+          commit-message: "${{ steps.compose_id.outputs.compose_id }} - ${{ steps.date.outputs.date }}"
           committer: cloudkitebot <henrywangxf1@gmail.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           branch: cpr
           branch-suffix: random
           delete-branch: true
-          title: "${{ steps.compose_id.outputs.compose_id }} test - ${{ steps.date.outputs.date }}"
+          title: "${{ steps.compose_id.outputs.compose_id }} - ${{ steps.date.outputs.date }}"
           body: |
             RHEL compose ${{ github.event.client_payload.compose_id }}
             - Date: ${{ steps.date.outputs.date }}
