@@ -53,6 +53,9 @@ jobs:
             endsWith(github.event.comment.body, '/test-rhel-9-1-virt')) }}
     runs-on: ubuntu-latest
     # runs-on: [rhos-01, rhel-9-1, standard-medium]
+    env:
+      STATUS_NAME: ostree-virt
+
     steps:
       - name: Create in-progress status
         uses: octokit/request-action@v2.x
@@ -90,6 +93,9 @@ jobs:
             endsWith(github.event.comment.body, '/test-rhel-9-1-ng')) }}
     runs-on: ubuntu-latest
     # runs-on: [rhos-01, rhel-9-1, standard-medium]
+    env:
+      STATUS_NAME: ostree-ng-virt
+
     steps:
       - name: Create in-progress status
         uses: octokit/request-action@v2.x
