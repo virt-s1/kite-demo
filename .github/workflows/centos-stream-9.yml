@@ -1,5 +1,5 @@
 ---
-name: Setup RHEL 9.0.0 OSTree Repo
+name: Run Edge Test on CentOS Stream 9
 
 on:
   issue_comment:
@@ -9,7 +9,13 @@ on:
 jobs:
   pr-info:
     if: ${{ github.event.issue.pull_request &&
-            (startsWith(github.event.comment.body, '/build') || startsWith(github.event.comment.body, '/build-rhel-9-0') || startsWith(github.event.comment.body, '/build-rhel-9-0-normal')) }}
+            (endsWith(github.event.comment.body, '/test-cs9') ||
+            endsWith(github.event.comment.body, '/test-cs9-virt') ||
+            endsWith(github.event.comment.body, '/test-cs9-ng') ||
+            endsWith(github.event.comment.body, '/test-cs9-raw') ||
+            endsWith(github.event.comment.body, '/test-cs9-simplified') ||
+            endsWith(github.event.comment.body, '/test-cs9-8-to-9') ||
+            endsWith(github.event.comment.body, '/test-cs9-rebase')) }}
     runs-on: ubuntu-latest
     steps:
       - name: Query author repository permissions
@@ -40,14 +46,12 @@ jobs:
       allowed_user: ${{ steps.check_user_perm.outputs.allowed_user }}
       sha: ${{ fromJson(steps.pr-api.outputs.data).head.sha }}
 
-  normal:
-    needs: pr-info
-    if: ${{ needs.pr-info.outputs.allowed_user == 'true' }}
+  ostree-virt:
+    if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
+            (endsWith(github.event.comment.body, '/test-cs9') ||]
+            endsWith(github.event.comment.body, '/test-cs9-virt')) }}
     runs-on: ubuntu-latest
     # runs-on: [rhos-01, rhel-9-0, standard-medium]
-    env:
-      STATUS_NAME: normal
-
     steps:
       - name: Create in-progress status
         uses: octokit/request-action@v2.x
@@ -65,7 +69,7 @@ jobs:
           ref: ${{ needs.pr-info.outputs.sha }}
           fetch-depth: 0
 
-      - run: cat rhel-9-0-image-build.log
+      - run: echo "Run ostree.sh script"
 
       - name: Set result status
         if: always()
@@ -78,14 +82,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  rt:
-    needs: pr-info
-    if: ${{ needs.pr-info.outputs.allowed_user == 'true' }}
+  ostree-ng-virt:
+    if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
+            (endsWith(github.event.comment.body, '/test-cs9') ||]
+            endsWith(github.event.comment.body, '/test-cs9-ng')) }}
     runs-on: ubuntu-latest
     # runs-on: [rhos-01, rhel-9-0, standard-medium]
-    env:
-      STATUS_NAME: rt
-
     steps:
       - name: Create in-progress status
         uses: octokit/request-action@v2.x
@@ -103,7 +105,7 @@ jobs:
           ref: ${{ needs.pr-info.outputs.sha }}
           fetch-depth: 0
 
-      - run: cat rhel-9-0-image-build.log
+      - run: echo "Run ostree-ng.sh script"
 
       - name: Set result status
         if: always()

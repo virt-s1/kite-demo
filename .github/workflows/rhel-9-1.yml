@@ -1,5 +1,5 @@
 ---
-name: Run Edge Test on RHEL 9.0.0
+name: Run Edge Test on RHEL 9.1.0
 
 on:
   issue_comment:
@@ -9,13 +9,13 @@ on:
 jobs:
   pr-info:
     if: ${{ github.event.issue.pull_request &&
-            (endsWith(github.event.comment.body, '/test-rhel-9-0') ||
-            endsWith(github.event.comment.body, '/test-rhel-9-0-virt') ||
-            endsWith(github.event.comment.body, '/test-rhel-9-0-ng') ||
-            endsWith(github.event.comment.body, '/test-rhel-9-0-raw') ||
-            endsWith(github.event.comment.body, '/test-rhel-9-0-simplified') ||
-            endsWith(github.event.comment.body, '/test-rhel-9-0-8-to-9') ||
-            endsWith(github.event.comment.body, '/test-rhel-9-0-rebase')) }}
+            (endsWith(github.event.comment.body, '/test-rhel-9-1') ||
+            endsWith(github.event.comment.body, '/test-rhel-9-1-virt') ||
+            endsWith(github.event.comment.body, '/test-rhel-9-1-ng') ||
+            endsWith(github.event.comment.body, '/test-rhel-9-1-raw') ||
+            endsWith(github.event.comment.body, '/test-rhel-9-1-simplified') ||
+            endsWith(github.event.comment.body, '/test-rhel-9-1-8-to-9') ||
+            endsWith(github.event.comment.body, '/test-rhel-9-1-rebase')) }}
     runs-on: ubuntu-latest
     steps:
       - name: Query author repository permissions
@@ -48,10 +48,10 @@ jobs:
 
   ostree-virt:
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
-            (endsWith(github.event.comment.body, '/test-rhel-9-0') ||]
-            endsWith(github.event.comment.body, '/test-rhel-9-0-virt')) }}
+            (endsWith(github.event.comment.body, '/test-rhel-9-1') ||]
+            endsWith(github.event.comment.body, '/test-rhel-9-1-virt')) }}
     runs-on: ubuntu-latest
-    # runs-on: [rhos-01, rhel-9-0, standard-medium]
+    # runs-on: [rhos-01, rhel-9-1, standard-medium]
     steps:
       - name: Create in-progress status
         uses: octokit/request-action@v2.x
@@ -84,10 +84,10 @@ jobs:
 
   ostree-ng-virt:
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
-            (endsWith(github.event.comment.body, '/test-rhel-9-0') ||]
-            endsWith(github.event.comment.body, '/test-rhel-9-0-ng')) }}
+            (endsWith(github.event.comment.body, '/test-rhel-9-1') ||]
+            endsWith(github.event.comment.body, '/test-rhel-9-1-ng')) }}
     runs-on: ubuntu-latest
-    # runs-on: [rhos-01, rhel-9-0, standard-medium]
+    # runs-on: [rhos-01, rhel-9-1, standard-medium]
     steps:
       - name: Create in-progress status
         uses: octokit/request-action@v2.x
