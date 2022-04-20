@@ -51,8 +51,8 @@ jobs:
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
             (endsWith(github.event.comment.body, '/test-rhel-9-0') ||
             endsWith(github.event.comment.body, '/test-rhel-9-0-virt')) }}
-    runs-on: ubuntu-latest
-    # runs-on: [rhos-01, rhel-9-0, standard-medium]
+    # runs-on: ubuntu-latest
+    runs-on: [rhos-01, rhel-9-0, standard-medium]
     env:
       STATUS_NAME: ostree-virt
 
