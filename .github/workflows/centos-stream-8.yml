@@ -51,7 +51,7 @@ jobs:
             (endsWith(github.event.comment.body, '/test-cs8') ||
             endsWith(github.event.comment.body, '/test-cs8-virt')) }}
     # runs-on: ubuntu-latest
-    runs-on: [x86_64, rhos-01, centos-stream-8, large]
+    runs-on: [kite, x86_64, rhos-01, centos-stream-8, large]
     env:
       STATUS_NAME: edge-commit-CS8
 
@@ -90,7 +90,7 @@ jobs:
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
             (endsWith(github.event.comment.body, '/test-cs8') ||
             endsWith(github.event.comment.body, '/test-cs8-ng')) }}
-    runs-on: [x86_64, rhos-01, centos-stream-8, large]
+    runs-on: [kite, x86_64, rhos-01, centos-stream-8, large]
     env:
       STATUS_NAME: edge-installer-CS8
 
