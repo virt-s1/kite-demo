@@ -15,20 +15,26 @@ jobs:
       - name: Check if fedora rawhide compose is new
         id: check_compose_id
         run: |
-          echo "::set-output name=rawhide_compose::false"
+          curl -s https://download-cc-rdu01.fedoraproject.org/pub/fedora/linux/development/rawhide/COMPOSE_ID --output COMPOSE_ID
+          COMPOSE_ID=$(cat COMPOSE_ID)
+          TESTED_COMPOSE=( $( cat compose.log ) )
+          if [[ " ${TESTED_COMPOSE[*]} " =~ "$COMPOSE_ID" ]]; then
+              COMPOSE_ID="false"
+          fi
+          echo "::set-output name=rawhide_compose::$COMPOSE_ID"
     outputs:
       rawhide_compose: ${{ steps.check_compose_id.outputs.rawhide_compose }}
 
   fedora-rawhide:
     needs: check-compose
-    if: ${{ needs.check_compose.outputs.rawhide_compose != 'false' }}
+    if: ${{ needs.check-compose.outputs.rawhide_compose != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
       - name: Add new compose id in compose.log
         run: |
-          compose_id="${{ needs.check_compose.outputs.rawhide_compose }}"
+          compose_id="${{ needs.check-compose.outputs.rawhide_compose }}"
           echo $compose_id >> compose.log
           cat compose.log
 
@@ -41,15 +47,15 @@ jobs:
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "${{ needs.check_compose.outputs.rawhide_compose }} - ${{ steps.date.outputs.date }}"
+          commit-message: "${{ needs.check-compose.outputs.rawhide_compose }} - ${{ steps.date.outputs.date }}"
           committer: cloudkitebot <henrywangxf1@gmail.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           branch: cpr
           branch-suffix: random
           delete-branch: true
-          title: "${{ needs.check_compose.outputs.rawhide_compose }} - ${{ steps.date.outputs.date }}"
+          title: "${{ needs.check-compose.outputs.rawhide_compose }} - ${{ steps.date.outputs.date }}"
           body: |
-            Fedora rawhide compose ${{ needs.check_compose.outputs.rawhide_compose }}
+            Fedora rawhide compose ${{ needs.check-compose.outputs.rawhide_compose }}
             - Date: ${{ steps.date.outputs.date }}
             - Compose URL: "https://download-cc-rdu01.fedoraproject.org/pub/fedora/linux/development/rawhide/"
 
