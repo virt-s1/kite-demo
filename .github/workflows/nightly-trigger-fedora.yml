@@ -23,7 +23,7 @@ jobs:
           #     COMPOSE_ID="false"
           # fi
           # echo "::set-output name=rawhide_compose::$COMPOSE_ID"
-          echo "::set-output name=rawhide_compose::fedora-raw"
+          echo "::set-output name=rawhide_compose::false"
     outputs:
       rawhide_compose: ${{ steps.check_compose_id.outputs.rawhide_compose }}
 
