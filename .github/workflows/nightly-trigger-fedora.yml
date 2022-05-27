@@ -22,7 +22,9 @@ jobs:
           if [[ " ${TESTED_COMPOSE[*]} " =~ "$COMPOSE_ID" ]]; then
               COMPOSE_ID="false"
           fi
-          echo "::set-output name=new_rawhide_compose::$COMPOSE_ID"
+          echo $COMPOSE_ID
+          # echo "::set-output name=new_rawhide_compose::$COMPOSE_ID"
+          echo "::set-output name=new_rawhide_compose::fedora-raw"
     outputs:
       new_rawhide_compose: ${{ steps.check_compose_id.outputs.new_rawhide_compose }}
 
