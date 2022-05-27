@@ -19,12 +19,10 @@ jobs:
           COMPOSE_ID=$(cat COMPOSE_ID)
           echo $COMPOSE_ID
           TESTED_COMPOSE=( $( cat compose.log ) )
-          echo $TESTED_COMPOSE
-          if [[ ! " ${TESTED_COMPOSE[*]} " =~ "$COMPOSE_ID" ]]; then
-              echo "::set-output name=new_rawhide_compose::$(echo ${COMPOSE_ID})"
-          else
-              echo "::set-output name=new_rawhide_compose::false"
+          if [[ " ${TESTED_COMPOSE[*]} " =~ "$COMPOSE_ID" ]]; then
+              COMPOSE_ID="false"
           fi
+          echo "::set-output name=new_rawhide_compose::$COMPOSE_ID"
     outputs:
       new_rawhide_compose: ${{ steps.check_compose_id.outputs.new_rawhide_compose }}
 
