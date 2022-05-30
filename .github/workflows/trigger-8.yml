@@ -1,5 +1,5 @@
 ---
-name: RHEL 9 nightly compose trigger
+name: RHEL 8 compose trigger
 
 on:
   # Triggered by UMB
@@ -29,9 +29,9 @@ jobs:
     outputs:
       allowed_user: ${{ steps.check_user_perm.outputs.allowed_user }}
 
-  rhel-9-0:
+  rhel-8-6:
     needs: pr-info
-    if: ${{ needs.pr-info.outputs.allowed_user == 'true' && contains(github.event.client_payload.distro, 'rhel-9-0') }}
+    if: ${{ needs.pr-info.outputs.allowed_user == 'true' && contains(github.event.client_payload.distro, '8.6.0') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -58,26 +58,26 @@ jobs:
           body: |
             RHEL compose ${{ github.event.client_payload.compose_id }}
             - Date: ${{ steps.date.outputs.date }}
-            - Compose URL: "https://download-node-02.eng.bos.redhat.com/rhel-9/nightly/RHEL-9/${{ github.event.client_payload.compose_id }}/compose/BaseOS/x86_64/os"
+            - Compose URL: ${{ github.event.client_payload.compose_url }}
 
       - name: Add a comment to trigger test workflow
         uses: peter-evans/create-or-update-comment@v1
         with:
           token: ${{ secrets.PAT }}
           issue-number: ${{ steps.cpr.outputs.pull-request-number }}
-          body: /test-rhel-9-0
+          body: /test-rhel-8-6
 
       - name: Create a project card to track compose test result
         uses: peter-evans/create-or-update-project-card@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          project-name: Nightly Compose Test
-          column-name: RHEL-9-0
+          project-name: RHEL Compose Test
+          column-name: RHEL-8-6
           issue-number: ${{ steps.cpr.outputs.pull-request-number }}
 
-  rhel-9-1:
+  rhel-8-7:
     needs: pr-info
-    if: ${{ needs.pr-info.outputs.allowed_user == 'true' && contains(github.event.client_payload.distro, 'rhel-9-1') }}
+    if: ${{ needs.pr-info.outputs.allowed_user == 'true' && contains(github.event.client_payload.distro, '8.7.0') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -104,26 +104,26 @@ jobs:
           body: |
             RHEL compose ${{ github.event.client_payload.compose_id }}
             - Date: ${{ steps.date.outputs.date }}
-            - Compose URL: "https://download-node-02.eng.bos.redhat.com/rhel-9/nightly/RHEL-9/${{ github.event.client_payload.compose_id }}/compose/BaseOS/x86_64/os"
+            - Compose URL: ${{ github.event.client_payload.compose_url }}
 
       - name: Add a comment to trigger test workflow
         uses: peter-evans/create-or-update-comment@v1
         with:
           token: ${{ secrets.PAT }}
           issue-number: ${{ steps.cpr.outputs.pull-request-number }}
-          body: /test-rhel-9-1
+          body: /test-rhel-8-7
 
       - name: Create a project card to track compose test result
         uses: peter-evans/create-or-update-project-card@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          project-name: Nightly Compose Test
-          column-name: RHEL-9-1
+          project-name: RHEL Compose Test
+          column-name: RHEL-8-7
           issue-number: ${{ steps.cpr.outputs.pull-request-number }}
 
-  centos-stream-9:
+  centos-stream-8:
     needs: pr-info
-    if: ${{ needs.pr-info.outputs.allowed_user == 'true' && contains(github.event.client_payload.distro, 'rhel-9-1') }}
+    if: ${{ needs.pr-info.outputs.allowed_user == 'true' && contains(github.event.client_payload.distro, '8.7.0') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -137,7 +137,7 @@ jobs:
 
       - name: Get compose id
         id: compose_id
-        run: echo "::set-output name=compose_id::$(curl -s https://composes.stream.centos.org/production/ | grep -ioE '>CentOS-Stream-9-.*/<' | tr -d '><' | tail -1 | tr -d '/')"
+        run: echo "::set-output name=compose_id::$(curl -s https://composes.centos.org/ | grep -ioE '>CentOS-Stream-8-.*/<' | tr -d '><' | tail -1 | tr -d '/')"
 
       - name: Create Pull Request
         id: cpr
@@ -154,19 +154,19 @@ jobs:
           body: |
             RHEL compose ${{ github.event.client_payload.compose_id }}
             - Date: ${{ steps.date.outputs.date }}
-            - Compose URL: "https://composes.stream.centos.org/production/${{ steps.compose_id.outputs.compose_id }}/compose/BaseOS/x86_64/os/"
+            - Compose URL: "https://composes.centos.org/${{ steps.compose_id.outputs.compose_id }}/compose/BaseOS/x86_64/os/"
 
       - name: Add a comment to trigger test workflow
         uses: peter-evans/create-or-update-comment@v1
         with:
           token: ${{ secrets.PAT }}
           issue-number: ${{ steps.cpr.outputs.pull-request-number }}
-          body: /test-cs9
+          body: /test-cs8
 
       - name: Create a project card to track compose test result
         uses: peter-evans/create-or-update-project-card@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          project-name: Nightly Compose Test
-          column-name: CentOS-Stream-9
+          project-name: RHEL Compose Test
+          column-name: CentOS-Stream-8
           issue-number: ${{ steps.cpr.outputs.pull-request-number }}

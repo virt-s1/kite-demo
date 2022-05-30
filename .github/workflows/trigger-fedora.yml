@@ -1,5 +1,5 @@
 ---
-name: Fedora nightly compose trigger
+name: Fedora compose trigger
 
 on:
   workflow_dispatch:
