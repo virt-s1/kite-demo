@@ -45,7 +45,7 @@ jobs:
       allowed_user: ${{ steps.check_user_perm.outputs.allowed_user }}
       sha: ${{ fromJson(steps.pr-api.outputs.data).head.sha }}
 
-  edge-commit-8.6:
+  edge-commit-86:
     needs: pr-info
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
             (endsWith(github.event.comment.body, '/test-rhel-8-6') ||
@@ -84,7 +84,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  edge-installer-8.6:
+  edge-installer-86:
     needs: pr-info
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
             (endsWith(github.event.comment.body, '/test-rhel-8-6') ||
