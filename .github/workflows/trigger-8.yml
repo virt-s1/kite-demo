@@ -2,42 +2,70 @@
 name: RHEL 8 compose trigger
 
 on:
-  # Triggered by UMB
-  repository_dispatch:
-    types: [compose]
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '0 1 * * *'
+
+env:
+  COMPOSE_URL_86: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/updates/RHEL-8/latest-RHEL-8.6.0
+  COMPOSE_URL_87: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.7.0/
 
 jobs:
-  pr-info:
-    runs-on: ubuntu-latest
+  check-compose:
+    runs-on: [kite, x86_64, rhos-01, fedora-36, small]
     steps:
-      - name: Query author repository permissions
-        uses: octokit/request-action@v2.x
-        id: user_permission
-        with:
-          route: GET /repos/${{ github.repository }}/collaborators/${{ github.event.sender.login }}/permission
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v3
 
-      # restrict running of tests to users with admin or write permission for the repository
-      # see https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#get-repository-permissions-for-a-user
-      - name: Check if user does have correct permissions
-        if: contains('admin write', fromJson(steps.user_permission.outputs.data).permission)
-        id: check_user_perm
+      - name: Check RHEL 8.6 compose
+        id: check_compose_id_86
         run: |
-          echo "User '${{ github.event.sender.login }}' has permission '${{ fromJson(steps.user_permission.outputs.data).permission }}' allowed values: 'admin', 'write'"
-          echo "::set-output name=allowed_user::true"
+          curl -s ${COMPOSE_URL_86}/STATUS --output STATUS_86
+          STATUS_86=$(cat STATUS_86)
+          if [[ "$STATUS_86" == "FINISHED" ]]; then
+              curl -s ${COMPOSE_URL_86}/COMPOSE_ID --output COMPOSE_ID_86
+              COMPOSE_ID_86=$(cat COMPOSE_ID_86)
+              TESTED_COMPOSE_86=( $( cat .github/workflows/compose.86 ) )
+              if [[ " ${TESTED_COMPOSE_86[*]} " =~ "$COMPOSE_ID_86" ]]; then
+                  COMPOSE_ID_86="false"
+              fi
+          else
+              COMPOSE_ID_86="false"
+          fi
+          echo "::set-output name=rhel86_compose::$COMPOSE_ID_86"
+
+      - name: Check RHEL 8.7 compose
+        id: check_compose_id_87
+        run: |
+          curl -s ${COMPOSE_URL_87}/STATUS --output STATUS_87
+          STATUS_87=$(cat STATUS_87)
+          if [[ "$STATUS_87" == "FINISHED" ]]; then
+              curl -s ${COMPOSE_URL_87}/COMPOSE_ID --output COMPOSE_ID_87
+              COMPOSE_ID_87=$(cat COMPOSE_ID_87)
+              TESTED_COMPOSE_87=( $( cat .github/workflows/compose.87 ) )
+              if [[ " ${TESTED_COMPOSE_87[*]} " =~ "$COMPOSE_ID_87" ]]; then
+                  COMPOSE_ID_87="false"
+              fi
+          else
+              COMPOSE_ID_87="false"
+          fi
+          echo "::set-output name=rhel87_compose::$COMPOSE_ID_87"
+
     outputs:
-      allowed_user: ${{ steps.check_user_perm.outputs.allowed_user }}
+      rhel86_compose: ${{ steps.check_compose_id_86.outputs.rhel86_compose }}
+      rhel87_compose: ${{ steps.check_compose_id_87.outputs.rhel87_compose }}
 
   rhel-8-6:
-    needs: pr-info
-    if: ${{ needs.pr-info.outputs.allowed_user == 'true' && contains(github.event.client_payload.distro, '8.6.0') }}
+    needs: check-compose
+    if: ${{ needs.check-compose.outputs.rhel86_compose != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: Prepare nightly compose test PR
-        run: date "+%F %R" > pr-creator.txt
+      - name: Add new compose id in compose.86
+        run: |
+          compose_id="${{ needs.check-compose.outputs.rhel86_compose }}"
+          echo $compose_id >> .github/workflows/compose.86
+          cat .github/workflows/compose.86
 
       - name: Get current date
         id: date
@@ -48,17 +76,18 @@ jobs:
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "${{ github.event.client_payload.compose_id }} - ${{ steps.date.outputs.date }}"
+          commit-message: "${{ needs.check-compose.outputs.rhel86_compose }} - ${{ steps.date.outputs.date }}"
           committer: cloudkitebot <henrywangxf1@gmail.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           branch: cpr
           branch-suffix: random
           delete-branch: true
-          title: "${{ github.event.client_payload.compose_id }} - ${{ steps.date.outputs.date }}"
+          title: "${{ needs.check-compose.outputs.rhel86_compose }} - ${{ steps.date.outputs.date }}"
+          labels: needs-merge
           body: |
-            RHEL compose ${{ github.event.client_payload.compose_id }}
+            RHEL 8.6 compose ${{ needs.check-compose.outputs.rhel86_compose }}
             - Date: ${{ steps.date.outputs.date }}
-            - Compose URL: ${{ github.event.client_payload.compose_url }}
+            - Compose URL: "${COMPOSE_URL_86}/${{ needs.check-compose.outputs.rhel86_compose }}"
 
       - name: Add a comment to trigger test workflow
         uses: peter-evans/create-or-update-comment@v1
@@ -76,14 +105,17 @@ jobs:
           issue-number: ${{ steps.cpr.outputs.pull-request-number }}
 
   rhel-8-7:
-    needs: pr-info
-    if: ${{ needs.pr-info.outputs.allowed_user == 'true' && contains(github.event.client_payload.distro, '8.7.0') }}
+    needs: check-compose
+    if: ${{ needs.check-compose.outputs.rhel87_compose != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: Prepare nightly compose test PR
-        run: date "+%F %R" > pr-creator.txt
+      - name: Add new compose id in compose.87
+        run: |
+          compose_id="${{ needs.check-compose.outputs.rhel87_compose }}"
+          echo $compose_id >> .github/workflows/compose.87
+          cat .github/workflows/compose.87
 
       - name: Get current date
         id: date
@@ -94,17 +126,18 @@ jobs:
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "${{ github.event.client_payload.compose_id }} - ${{ steps.date.outputs.date }}"
+          commit-message: "${{ needs.check-compose.outputs.rhel87_compose }} - ${{ steps.date.outputs.date }}"
           committer: cloudkitebot <henrywangxf1@gmail.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           branch: cpr
           branch-suffix: random
           delete-branch: true
-          title: "${{ github.event.client_payload.compose_id }} - ${{ steps.date.outputs.date }}"
+          title: "${{ needs.check-compose.outputs.rhel87_compose }} - ${{ steps.date.outputs.date }}"
+          labels: needs-merge
           body: |
-            RHEL compose ${{ github.event.client_payload.compose_id }}
+            RHEL 8.7 compose ${{ needs.check-compose.outputs.rhel87_compose }}
             - Date: ${{ steps.date.outputs.date }}
-            - Compose URL: ${{ github.event.client_payload.compose_url }}
+            - Compose URL: "${COMPOSE_URL_87}/${{ needs.check-compose.outputs.rhel87_compose }}"
 
       - name: Add a comment to trigger test workflow
         uses: peter-evans/create-or-update-comment@v1
@@ -119,54 +152,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           project-name: RHEL Compose Test
           column-name: RHEL-8-7
-          issue-number: ${{ steps.cpr.outputs.pull-request-number }}
-
-  centos-stream-8:
-    needs: pr-info
-    if: ${{ needs.pr-info.outputs.allowed_user == 'true' && contains(github.event.client_payload.distro, '8.7.0') }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Prepare nightly compose test PR
-        run: date "+%F %R" > pr-creator.txt
-
-      - name: Get current date
-        id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
-
-      - name: Get compose id
-        id: compose_id
-        run: echo "::set-output name=compose_id::$(curl -s https://composes.centos.org/ | grep -ioE '>CentOS-Stream-8-.*/<' | tr -d '><' | tail -1 | tr -d '/')"
-
-      - name: Create Pull Request
-        id: cpr
-        uses: peter-evans/create-pull-request@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "${{ steps.compose_id.outputs.compose_id }} - ${{ steps.date.outputs.date }}"
-          committer: cloudkitebot <henrywangxf1@gmail.com>
-          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
-          branch: cpr
-          branch-suffix: random
-          delete-branch: true
-          title: "${{ steps.compose_id.outputs.compose_id }} - ${{ steps.date.outputs.date }}"
-          body: |
-            RHEL compose ${{ github.event.client_payload.compose_id }}
-            - Date: ${{ steps.date.outputs.date }}
-            - Compose URL: "https://composes.centos.org/${{ steps.compose_id.outputs.compose_id }}/compose/BaseOS/x86_64/os/"
-
-      - name: Add a comment to trigger test workflow
-        uses: peter-evans/create-or-update-comment@v1
-        with:
-          token: ${{ secrets.PAT }}
-          issue-number: ${{ steps.cpr.outputs.pull-request-number }}
-          body: /test-cs8
-
-      - name: Create a project card to track compose test result
-        uses: peter-evans/create-or-update-project-card@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          project-name: RHEL Compose Test
-          column-name: CentOS-Stream-8
           issue-number: ${{ steps.cpr.outputs.pull-request-number }}
