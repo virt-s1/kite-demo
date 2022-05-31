@@ -46,15 +46,14 @@ jobs:
       allowed_user: ${{ steps.check_user_perm.outputs.allowed_user }}
       sha: ${{ fromJson(steps.pr-api.outputs.data).head.sha }}
 
-  ostree-virt:
+  edge-commit-91:
     needs: pr-info
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
             (endsWith(github.event.comment.body, '/test-rhel-9-1') ||
             endsWith(github.event.comment.body, '/test-rhel-9-1-virt')) }}
     runs-on: ubuntu-latest
-    # runs-on: [rhos-01, rhel-9-1, standard-medium]
     env:
-      STATUS_NAME: ostree-virt
+      STATUS_NAME: edge-commit-9.1
 
     steps:
       - name: Create in-progress status
@@ -86,15 +85,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  ostree-ng-virt:
+  edge-installer-91:
     needs: pr-info
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
             (endsWith(github.event.comment.body, '/test-rhel-9-1') ||
             endsWith(github.event.comment.body, '/test-rhel-9-1-ng')) }}
     runs-on: ubuntu-latest
-    # runs-on: [rhos-01, rhel-9-1, standard-medium]
     env:
-      STATUS_NAME: ostree-ng-virt
+      STATUS_NAME: edge-installer-9.1
 
     steps:
       - name: Create in-progress status
