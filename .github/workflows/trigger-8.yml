@@ -8,7 +8,7 @@ on:
 
 env:
   COMPOSE_URL_86: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/updates/RHEL-8/latest-RHEL-8.6.0
-  COMPOSE_URL_87: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.7.0/
+  COMPOSE_URL_87: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.7.0
 
 jobs:
   check-compose:
@@ -87,7 +87,7 @@ jobs:
           body: |
             RHEL 8.6 compose ${{ needs.check-compose.outputs.rhel86_compose }}
             - Date: ${{ steps.date.outputs.date }}
-            - Compose URL: "${COMPOSE_URL_86}/${{ needs.check-compose.outputs.rhel86_compose }}"
+            - Compose URL: "${{ env.COMPOSE_URL_86 }}/${{ needs.check-compose.outputs.rhel86_compose }}"
 
       - name: Add a comment to trigger test workflow
         uses: peter-evans/create-or-update-comment@v1
@@ -137,7 +137,7 @@ jobs:
           body: |
             RHEL 8.7 compose ${{ needs.check-compose.outputs.rhel87_compose }}
             - Date: ${{ steps.date.outputs.date }}
-            - Compose URL: "${COMPOSE_URL_87}/${{ needs.check-compose.outputs.rhel87_compose }}"
+            - Compose URL: "${{ env.COMPOSE_URL_87 }}/${{ needs.check-compose.outputs.rhel87_compose }}"
 
       - name: Add a comment to trigger test workflow
         uses: peter-evans/create-or-update-comment@v1
