@@ -4,7 +4,7 @@ name: Fedora compose trigger
 on:
   workflow_dispatch:
   # schedule:
-  #   - cron: '0 2 * * *'
+  #   - cron: '0 4 * * *'
 
 jobs:
   check-compose:

@@ -45,7 +45,7 @@ jobs:
       allowed_user: ${{ steps.check_user_perm.outputs.allowed_user }}
       sha: ${{ fromJson(steps.pr-api.outputs.data).head.sha }}
 
-  edge-commit-CS8:
+  edge-commit-cs8:
     needs: pr-info
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
             (endsWith(github.event.comment.body, '/test-cs8') ||
@@ -53,7 +53,7 @@ jobs:
     # runs-on: ubuntu-latest
     runs-on: [kite, x86_64, rhos-01, centos-stream-8, large]
     env:
-      STATUS_NAME: edge-commit-CS8
+      STATUS_NAME: edge-commit-cs8
 
     steps:
       - name: Create in-progress status
@@ -85,14 +85,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  edge-installer-CS8:
+  edge-installer-cs8:
     needs: pr-info
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
             (endsWith(github.event.comment.body, '/test-cs8') ||
             endsWith(github.event.comment.body, '/test-cs8-ng')) }}
     runs-on: [kite, x86_64, rhos-01, centos-stream-8, large]
     env:
-      STATUS_NAME: edge-installer-CS8
+      STATUS_NAME: edge-installer-cs8
 
     steps:
       - name: Create in-progress status
