@@ -24,7 +24,7 @@ jobs:
           if [[ "$STATUS_86" == "FINISHED" ]]; then
               curl -s ${COMPOSE_URL_86}/COMPOSE_ID --output COMPOSE_ID_86
               COMPOSE_ID_86=$(cat COMPOSE_ID_86)
-              TESTED_COMPOSE_86=( $( cat .github/workflows/compose.86 ) )
+              TESTED_COMPOSE_86=( $( cat compose/compose.86 ) )
               if [[ " ${TESTED_COMPOSE_86[*]} " =~ "$COMPOSE_ID_86" ]]; then
                   COMPOSE_ID_86="false"
               fi
@@ -41,7 +41,7 @@ jobs:
           if [[ "$STATUS_87" == "FINISHED" ]]; then
               curl -s ${COMPOSE_URL_87}/COMPOSE_ID --output COMPOSE_ID_87
               COMPOSE_ID_87=$(cat COMPOSE_ID_87)
-              TESTED_COMPOSE_87=( $( cat .github/workflows/compose.87 ) )
+              TESTED_COMPOSE_87=( $( cat compose/compose.87 ) )
               if [[ " ${TESTED_COMPOSE_87[*]} " =~ "$COMPOSE_ID_87" ]]; then
                   COMPOSE_ID_87="false"
               fi
@@ -64,8 +64,8 @@ jobs:
       - name: Add new compose id in compose.86
         run: |
           compose_id="${{ needs.check-compose.outputs.rhel86_compose }}"
-          echo $compose_id >> .github/workflows/compose.86
-          cat .github/workflows/compose.86
+          echo $compose_id >> compose/compose.86
+          cat compose/compose.86
 
       - name: Get current date
         id: date
@@ -114,8 +114,8 @@ jobs:
       - name: Add new compose id in compose.87
         run: |
           compose_id="${{ needs.check-compose.outputs.rhel87_compose }}"
-          echo $compose_id >> .github/workflows/compose.87
-          cat .github/workflows/compose.87
+          echo $compose_id >> compose/compose.87
+          cat compose/compose.87
 
       - name: Get current date
         id: date

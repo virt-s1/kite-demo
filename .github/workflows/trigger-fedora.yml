@@ -17,7 +17,7 @@ jobs:
         run: |
           curl -s https://download-cc-rdu01.fedoraproject.org/pub/fedora/linux/development/rawhide/COMPOSE_ID --output COMPOSE_ID
           COMPOSE_ID=$(cat COMPOSE_ID)
-          TESTED_COMPOSE=( $( cat .github/workflows/compose.log ) )
+          TESTED_COMPOSE=( $( cat compose/compose.fedora ) )
           if [[ " ${TESTED_COMPOSE[*]} " =~ "$COMPOSE_ID" ]]; then
               COMPOSE_ID="false"
           fi
@@ -32,11 +32,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Add new compose id in compose.log
+      - name: Add new compose id in compose.fedora
         run: |
           compose_id="${{ needs.check-compose.outputs.rawhide_compose }}"
-          echo $compose_id >> .github/workflows/compose.log
-          cat .github/workflows/compose.log
+          echo $compose_id >> compose/compose.fedora
+          cat compose/compose.fedora
 
       - name: Get current date
         id: date
