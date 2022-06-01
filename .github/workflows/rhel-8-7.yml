@@ -1,5 +1,5 @@
 ---
-name: Run Edge Test on CentOS Stream 8
+name: Run Edge Test on RHEL 8.7
 
 on:
   issue_comment:
@@ -9,12 +9,12 @@ on:
 jobs:
   pr-info:
     if: ${{ github.event.issue.pull_request &&
-            (endsWith(github.event.comment.body, '/test-cs8') ||
-            endsWith(github.event.comment.body, '/test-cs8-virt') ||
-            endsWith(github.event.comment.body, '/test-cs8-ng') ||
-            endsWith(github.event.comment.body, '/test-cs8-raw') ||
-            endsWith(github.event.comment.body, '/test-cs8-simplified') ||
-            endsWith(github.event.comment.body, '/test-cs8-rebase')) }}
+            (endsWith(github.event.comment.body, '/test-rhel-8-7') ||
+            endsWith(github.event.comment.body, '/test-rhel-8-7-virt') ||
+            endsWith(github.event.comment.body, '/test-rhel-8-7-ng') ||
+            endsWith(github.event.comment.body, '/test-rhel-8-7-raw') ||
+            endsWith(github.event.comment.body, '/test-rhel-8-7-simplified') ||
+            endsWith(github.event.comment.body, '/test-rhel-8-7-rebase')) }}
     runs-on: ubuntu-latest
     steps:
       - name: Query author repository permissions
@@ -45,14 +45,14 @@ jobs:
       allowed_user: ${{ steps.check_user_perm.outputs.allowed_user }}
       sha: ${{ fromJson(steps.pr-api.outputs.data).head.sha }}
 
-  edge-commit-cs8:
+  edge-commit-87:
     needs: pr-info
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
-            (endsWith(github.event.comment.body, '/test-cs8') ||
-            endsWith(github.event.comment.body, '/test-cs8-virt')) }}
-    runs-on: [kite, x86_64, rhos-01, centos-stream-8, large]
+            (endsWith(github.event.comment.body, '/test-rhel-8-7') ||
+            endsWith(github.event.comment.body, '/test-rhel-8-7-virt')) }}
+    runs-on: [kite, x86_64, rhos-01, rhel-8-7, large]
     env:
-      STATUS_NAME: edge-commit-cs8
+      STATUS_NAME: edge-commit-8.7
 
     steps:
       - name: Create in-progress status
@@ -84,14 +84,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  edge-installer-cs8:
+  edge-installer-87:
     needs: pr-info
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
-            (endsWith(github.event.comment.body, '/test-cs8') ||
-            endsWith(github.event.comment.body, '/test-cs8-ng')) }}
-    runs-on: [kite, x86_64, rhos-01, centos-stream-8, large]
+            (endsWith(github.event.comment.body, '/test-rhel-8-7') ||
+            endsWith(github.event.comment.body, '/test-rhel-8-7-ng')) }}
+    runs-on: [kite, x86_64, rhos-01, rhel-8-7, large]
     env:
-      STATUS_NAME: edge-installer-cs8
+      STATUS_NAME: edge-installer-8.7
 
     steps:
       - name: Create in-progress status

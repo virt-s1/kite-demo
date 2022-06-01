@@ -3,8 +3,9 @@ name: RHEL 8 compose trigger
 
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron: '0 1 * * *'
+  schedule:
+    - cron: '0 1 * * *'
+    - cron: '0 13 * * *'
 
 env:
   COMPOSE_URL_86: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/updates/RHEL-8/latest-RHEL-8.6.0

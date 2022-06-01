@@ -52,7 +52,6 @@ jobs:
             (endsWith(github.event.comment.body, '/test-cs9') ||
             endsWith(github.event.comment.body, '/test-cs9-virt')) }}
     runs-on: ubuntu-latest
-    # runs-on: [rhos-01, rhel-9-0, standard-medium]
     env:
       STATUS_NAME: edge-commit-cs9
 
@@ -92,7 +91,6 @@ jobs:
             (endsWith(github.event.comment.body, '/test-cs9') ||
             endsWith(github.event.comment.body, '/test-cs9-ng')) }}
     runs-on: ubuntu-latest
-    # runs-on: [rhos-01, rhel-9-0, standard-medium]
     env:
       STATUS_NAME: edge-installer-cs9
 
