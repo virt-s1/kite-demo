@@ -26,7 +26,7 @@ jobs:
           if [[ "$STATUS_CS8" == "FINISHED" ]]; then
               curl -s ${COMPOSE_URL_CS8}/${CURRENT_COMPOSE_CS8}/COMPOSE_ID --output COMPOSE_ID_CS8
               COMPOSE_ID_CS8=$(cat COMPOSE_ID_CS8)
-              TESTED_COMPOSE_CS8=( $( cat compose/compose.cs ) )
+              TESTED_COMPOSE_CS8=( $( cat compose/compose.cs8 ) )
               if [[ " ${TESTED_COMPOSE_CS8[*]} " =~ "$COMPOSE_ID_CS8" ]]; then
                   COMPOSE_ID_CS8="false"
               fi
@@ -43,7 +43,7 @@ jobs:
           STATUS_CS9=$(cat STATUS_CS9)
           if [[ "$STATUS_CS9" == "FINISHED" ]]; then
               COMPOSE_ID_CS9=$CURRENT_COMPOSE_CS9
-              TESTED_COMPOSE_CS9=( $( cat compose/compose.cs ) )
+              TESTED_COMPOSE_CS9=( $( cat compose/compose.cs9 ) )
               if [[ " ${TESTED_COMPOSE_CS9[*]} " =~ "$COMPOSE_ID_CS9" ]]; then
                   COMPOSE_ID_CS9="false"
               fi
@@ -63,11 +63,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Add new compose id in compose.cs
+      - name: Add new compose id in compose.cs8
         run: |
           compose_id="${{ needs.check-compose.outputs.cs8_compose }}"
-          echo $compose_id >> compose/compose.cs
-          cat compose/compose.cs
+          echo $compose_id >> compose/compose.cs8
+          cat compose/compose.cs8
 
       - name: Get current date
         id: date
@@ -113,11 +113,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Add new compose id in compose.cs
+      - name: Add new compose id in compose.cs9
         run: |
           compose_id="${{ needs.check-compose.outputs.cs9_compose }}"
-          echo $compose_id >> compose/compose.cs
-          cat compose/compose.cs
+          echo $compose_id >> compose/compose.cs9
+          cat compose/compose.cs9
 
       - name: Get current date
         id: date
