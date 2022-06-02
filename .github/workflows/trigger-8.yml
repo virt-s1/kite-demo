@@ -8,8 +8,8 @@ on:
     - cron: '0 13 * * *'
 
 env:
-  COMPOSE_URL_86: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/updates/RHEL-8/latest-RHEL-8.6.0
-  COMPOSE_URL_87: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8/latest-RHEL-8.7.0
+  COMPOSE_URL_86: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/updates/RHEL-8
+  COMPOSE_URL_87: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8
 
 jobs:
   check-compose:
@@ -20,10 +20,10 @@ jobs:
       - name: Check RHEL 8.6 compose
         id: check_compose_id_86
         run: |
-          curl -s ${COMPOSE_URL_86}/STATUS --output STATUS_86
+          curl -s ${COMPOSE_URL_86}/latest-RHEL-8.6.0/STATUS --output STATUS_86
           STATUS_86=$(cat STATUS_86)
           if [[ "$STATUS_86" == "FINISHED" ]]; then
-              curl -s ${COMPOSE_URL_86}/COMPOSE_ID --output COMPOSE_ID_86
+              curl -s ${COMPOSE_URL_86}/latest-RHEL-8.6.0/COMPOSE_ID --output COMPOSE_ID_86
               COMPOSE_ID_86=$(cat COMPOSE_ID_86)
               TESTED_COMPOSE_86=( $( cat compose/compose.86 ) )
               if [[ " ${TESTED_COMPOSE_86[*]} " =~ "$COMPOSE_ID_86" ]]; then
@@ -37,10 +37,10 @@ jobs:
       - name: Check RHEL 8.7 compose
         id: check_compose_id_87
         run: |
-          curl -s ${COMPOSE_URL_87}/STATUS --output STATUS_87
+          curl -s ${COMPOSE_URL_87}/latest-RHEL-8.7.0/STATUS --output STATUS_87
           STATUS_87=$(cat STATUS_87)
           if [[ "$STATUS_87" == "FINISHED" ]]; then
-              curl -s ${COMPOSE_URL_87}/COMPOSE_ID --output COMPOSE_ID_87
+              curl -s ${COMPOSE_URL_87}/latest-RHEL-8.7.0/COMPOSE_ID --output COMPOSE_ID_87
               COMPOSE_ID_87=$(cat COMPOSE_ID_87)
               TESTED_COMPOSE_87=( $( cat compose/compose.87 ) )
               if [[ " ${TESTED_COMPOSE_87[*]} " =~ "$COMPOSE_ID_87" ]]; then
