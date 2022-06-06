@@ -84,11 +84,19 @@ jobs:
           branch-suffix: random
           delete-branch: true
           title: "${{ needs.check-compose.outputs.rhel86_compose }} - ${{ steps.date.outputs.date }}"
-          labels: needs-merge
+          labels: needs-review,auto-merge
           body: |
             RHEL 8.6 compose ${{ needs.check-compose.outputs.rhel86_compose }}
             - Date: ${{ steps.date.outputs.date }}
             - Compose URL: "${{ env.COMPOSE_URL_86 }}/${{ needs.check-compose.outputs.rhel86_compose }}"
+
+      - name: Enable Pull Request Automerge
+        if: steps.cpr.outputs.pull-request-operation == 'created'
+        uses: peter-evans/enable-pull-request-automerge@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: rebase
 
       - name: Add a comment to trigger test workflow
         uses: peter-evans/create-or-update-comment@v1
@@ -134,11 +142,19 @@ jobs:
           branch-suffix: random
           delete-branch: true
           title: "${{ needs.check-compose.outputs.rhel87_compose }} - ${{ steps.date.outputs.date }}"
-          labels: needs-merge
+          labels: needs-review,auto-merge
           body: |
             RHEL 8.7 compose ${{ needs.check-compose.outputs.rhel87_compose }}
             - Date: ${{ steps.date.outputs.date }}
             - Compose URL: "${{ env.COMPOSE_URL_87 }}/${{ needs.check-compose.outputs.rhel87_compose }}"
+
+      - name: Enable Pull Request Automerge
+        if: steps.cpr.outputs.pull-request-operation == 'created'
+        uses: peter-evans/enable-pull-request-automerge@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: rebase
 
       - name: Add a comment to trigger test workflow
         uses: peter-evans/create-or-update-comment@v1
