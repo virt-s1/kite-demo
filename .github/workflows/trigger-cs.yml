@@ -85,11 +85,19 @@ jobs:
           branch-suffix: random
           delete-branch: true
           title: "${{ needs.check-compose.outputs.cs8_compose }} - ${{ steps.date.outputs.date }}"
-          labels: needs-merge
+          labels: needs-review,auto-merge,centos-stream-8
           body: |
             CentOS Stream 8 compose ${{ needs.check-compose.outputs.cs8_compose }}
             - Date: ${{ steps.date.outputs.date }}
             - Compose URL: "${{ env.COMPOSE_URL_CS8 }}/${{ needs.check-compose.outputs.cs8_compose }}"
+
+      - name: Enable Pull Request Automerge
+        if: steps.cpr.outputs.pull-request-operation == 'created'
+        uses: peter-evans/enable-pull-request-automerge@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: rebase
 
       - name: Add a comment to trigger test workflow
         uses: peter-evans/create-or-update-comment@v1
@@ -135,11 +143,19 @@ jobs:
           branch-suffix: random
           delete-branch: true
           title: "${{ needs.check-compose.outputs.cs9_compose }} - ${{ steps.date.outputs.date }}"
-          labels: needs-merge
+          labels: needs-review,auto-merge,centos-stream-9
           body: |
             CentOS Stream 9 compose ${{ needs.check-compose.outputs.cs9_compose }}
             - Date: ${{ steps.date.outputs.date }}
             - Compose URL: "${{ env.COMPOSE_URL_CS9 }}/${{ needs.check-compose.outputs.cs9_compose }}"
+
+      - name: Enable Pull Request Automerge
+        if: steps.cpr.outputs.pull-request-operation == 'created'
+        uses: peter-evans/enable-pull-request-automerge@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: rebase
 
       - name: Add a comment to trigger test workflow
         uses: peter-evans/create-or-update-comment@v1
