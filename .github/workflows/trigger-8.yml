@@ -13,6 +13,8 @@ env:
 
 jobs:
   check-compose:
+    # Do not run this job on any fork repos
+    if: github.repository == 'virt-s1/kite-demo'
     runs-on: [kite, x86_64, rhos-01, fedora-36, small]
     steps:
       - uses: actions/checkout@v3
