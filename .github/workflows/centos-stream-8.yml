@@ -66,12 +66,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ needs.pr-info.outputs.sha }}
           fetch-depth: 0
 
-      - run: echo "Run ostree.sh script"
+      - name: Checkout rhel-edge repository
+        uses: actions/checkout@v3
+        with:
+          repository: virt-s1/rhel-edge
+          path: rhel-edge
+
+      - name: run ostree.sh
+        run: ./ostree.sh
+        working-directory: ./rhel-edge
 
       - name: Set result status
         if: always()
@@ -105,12 +113,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ needs.pr-info.outputs.sha }}
           fetch-depth: 0
 
-      - run: echo "Run ostree-ng.sh script"
+      - name: Checkout rhel-edge repository
+        uses: actions/checkout@v3
+        with:
+          repository: virt-s1/rhel-edge
+          path: rhel-edge
+
+      - name: run ostree-ng.sh
+        run: ./ostree-ng.sh
+        working-directory: ./rhel-edge
+        env:
+          CRC_PULL_SECRET_FILE: ${{ secrets.CRC_PULL_SECRET_FILE }}
+          QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+          QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
 
       - name: Set result status
         if: always()
