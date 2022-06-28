@@ -14,8 +14,7 @@ jobs:
             endsWith(github.event.comment.body, '/test-rhel-9-1-ng') ||
             endsWith(github.event.comment.body, '/test-rhel-9-1-raw') ||
             endsWith(github.event.comment.body, '/test-rhel-9-1-simplified') ||
-            endsWith(github.event.comment.body, '/test-rhel-9-1-8-to-9') ||
-            endsWith(github.event.comment.body, '/test-rhel-9-1-rebase')) }}
+            endsWith(github.event.comment.body, '/test-rhel-9-1-8to9')) }}
     runs-on: ubuntu-latest
     steps:
       - name: Query author repository permissions
@@ -51,7 +50,7 @@ jobs:
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
             (endsWith(github.event.comment.body, '/test-rhel-9-1') ||
             endsWith(github.event.comment.body, '/test-rhel-9-1-virt')) }}
-    runs-on: ubuntu-latest
+    runs-on: [kite, x86_64, rhos-01, rhel-9-1, large]
     env:
       STATUS_NAME: edge-commit-9.1
 
@@ -67,12 +66,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ needs.pr-info.outputs.sha }}
           fetch-depth: 0
 
-      - run: echo "Run ostree.sh script"
+      - name: Checkout rhel-edge repository
+        uses: actions/checkout@v3
+        with:
+          repository: virt-s1/rhel-edge
+          path: rhel-edge
+
+      - name: run ostree.sh
+        run: ./ostree.sh
+        working-directory: ./rhel-edge
 
       - name: Set result status
         if: always()
@@ -90,7 +97,7 @@ jobs:
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
             (endsWith(github.event.comment.body, '/test-rhel-9-1') ||
             endsWith(github.event.comment.body, '/test-rhel-9-1-ng')) }}
-    runs-on: ubuntu-latest
+    runs-on: [kite, x86_64, rhos-01, rhel-9-1, large]
     env:
       STATUS_NAME: edge-installer-9.1
 
@@ -111,7 +118,160 @@ jobs:
           ref: ${{ needs.pr-info.outputs.sha }}
           fetch-depth: 0
 
-      - run: echo "Run ostree-ng.sh script"
+      - name: Checkout rhel-edge repository
+        uses: actions/checkout@v3
+        with:
+          repository: virt-s1/rhel-edge
+          path: rhel-edge
+
+      - name: run ostree-ng.sh
+        run: ./ostree-ng.sh
+        working-directory: ./rhel-edge
+        env:
+          OCP4_TOKEN: ${{ secrets.OCP4_TOKEN }}
+          QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+          QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Set result status
+        if: always()
+        uses: octokit/request-action@v2.x
+        with:
+          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
+          context: ${{ env.STATUS_NAME }}
+          state: ${{ job.status }}
+          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  edge-raw-image-91:
+    needs: pr-info
+    if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
+            (endsWith(github.event.comment.body, '/test-rhel-9-1') ||
+            endsWith(github.event.comment.body, '/test-rhel-9-1-raw')) }}
+    runs-on: [kite, x86_64, rhos-01, rhel-9-1, large]
+    env:
+      STATUS_NAME: edge-raw-image-9.1
+
+    steps:
+      - name: Create in-progress status
+        uses: octokit/request-action@v2.x
+        with:
+          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
+          context: ${{ env.STATUS_NAME }}
+          state: pending
+          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clone repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.pr-info.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Checkout rhel-edge repository
+        uses: actions/checkout@v3
+        with:
+          repository: virt-s1/rhel-edge
+          path: rhel-edge
+
+      - name: run ostree-raw-image.sh
+        run: ./ostree-raw-image.sh
+        working-directory: ./rhel-edge
+
+      - name: Set result status
+        if: always()
+        uses: octokit/request-action@v2.x
+        with:
+          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
+          context: ${{ env.STATUS_NAME }}
+          state: ${{ job.status }}
+          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  edge-simplified-91:
+    needs: pr-info
+    if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
+            (endsWith(github.event.comment.body, '/test-rhel-9-1') ||
+            endsWith(github.event.comment.body, '/test-rhel-9-1-simplified')) }}
+    runs-on: [kite, x86_64, rhos-01, rhel-9-1, large]
+    env:
+      STATUS_NAME: edge-simplified-installer-9.1
+
+    steps:
+      - name: Create in-progress status
+        uses: octokit/request-action@v2.x
+        with:
+          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
+          context: ${{ env.STATUS_NAME }}
+          state: pending
+          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clone repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.pr-info.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Checkout rhel-edge repository
+        uses: actions/checkout@v3
+        with:
+          repository: virt-s1/rhel-edge
+          path: rhel-edge
+
+      - name: run ostree-simplified-installer.sh
+        run: ./ostree-simplified-installer.sh
+        working-directory: ./rhel-edge
+
+      - name: Set result status
+        if: always()
+        uses: octokit/request-action@v2.x
+        with:
+          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
+          context: ${{ env.STATUS_NAME }}
+          state: ${{ job.status }}
+          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  edge-8to9-91:
+    needs: pr-info
+    if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
+            (endsWith(github.event.comment.body, '/test-rhel-9-1') ||
+            endsWith(github.event.comment.body, '/test-rhel-9-1-8to9')) }}
+    runs-on: [kite, x86_64, rhos-01, rhel-9-1, large]
+    env:
+      STATUS_NAME: edge-8to9-9.1
+
+    steps:
+      - name: Create in-progress status
+        uses: octokit/request-action@v2.x
+        with:
+          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
+          context: ${{ env.STATUS_NAME }}
+          state: pending
+          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clone repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.pr-info.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Checkout rhel-edge repository
+        uses: actions/checkout@v3
+        with:
+          repository: virt-s1/rhel-edge
+          path: rhel-edge
+
+      - name: run ostree-8-to-9.sh
+        run: ./ostree-8-to-9.sh
+        working-directory: ./rhel-edge
 
       - name: Set result status
         if: always()
