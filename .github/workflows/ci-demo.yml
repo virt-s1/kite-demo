@@ -9,7 +9,7 @@ on:
 jobs:
   pr-info:
     if: ${{ github.event.issue.pull_request &&
-            endsWith(github.event.comment.body, '/test-ci-demo')) }}
+            endsWith(github.event.comment.body, '/test-ci-demo') }}
     runs-on: ubuntu-latest
     steps:
       - name: Query author repository permissions
@@ -43,7 +43,7 @@ jobs:
   edge-ci-demo:
     needs: pr-info
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' && github.event.issue.pull_request &&
-            endsWith(github.event.comment.body, '/test-ci-demo')) }}
+            endsWith(github.event.comment.body, '/test-ci-demo') }}
     runs-on: [kite, x86_64, rhos-01, rhel-8-7, large]
     env:
       STATUS_NAME: edge-ci-demo
