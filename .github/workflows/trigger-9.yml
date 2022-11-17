@@ -87,7 +87,6 @@ jobs:
           body: |
             RHEL 9.0 compose ${{ needs.check-compose.outputs.rhel90_compose }}
             - Date: ${{ steps.date.outputs.date }}
-            - Compose URL: "${{ env.COMPOSE_URL_90 }}/${{ needs.check-compose.outputs.rhel90_compose }}"
 
       - name: Enable Pull Request Automerge
         if: steps.cpr.outputs.pull-request-operation == 'created'
@@ -145,7 +144,6 @@ jobs:
           body: |
             RHEL 9.1 compose ${{ needs.check-compose.outputs.rhel91_compose }}
             - Date: ${{ steps.date.outputs.date }}
-            - Compose URL: "${{ env.COMPOSE_URL_91 }}/${{ needs.check-compose.outputs.rhel91_compose }}"
 
       - name: Enable Pull Request Automerge
         if: steps.cpr.outputs.pull-request-operation == 'created'

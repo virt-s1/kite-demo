@@ -79,6 +79,8 @@ jobs:
 
       - name: run ostree.sh
         run: ./ostree.sh
+        env:
+          DOWNLOAD_NODE: ${{ secrets.DOWNLOAD_NODE }}
         working-directory: ./rhel-edge
 
       - name: Set result status
@@ -131,6 +133,7 @@ jobs:
           OCP4_TOKEN: ${{ secrets.OCP4_TOKEN }}
           QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
           QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
+          DOWNLOAD_NODE: ${{ secrets.DOWNLOAD_NODE }}
 
       - name: Set result status
         if: always()
@@ -177,6 +180,8 @@ jobs:
 
       - name: run ostree-raw-image.sh
         run: ./ostree-raw-image.sh
+        env:
+          DOWNLOAD_NODE: ${{ secrets.DOWNLOAD_NODE }}
         working-directory: ./rhel-edge
 
       - name: Set result status
@@ -224,6 +229,8 @@ jobs:
 
       - name: run ostree-simplified-installer.sh
         run: ./ostree-simplified-installer.sh
+        env:
+          DOWNLOAD_NODE: ${{ secrets.DOWNLOAD_NODE }}
         working-directory: ./rhel-edge
 
       - name: Set result status
@@ -271,6 +278,8 @@ jobs:
 
       - name: run ostree-8-to-9.sh
         run: ./ostree-8-to-9.sh
+        env:
+          DOWNLOAD_NODE: ${{ secrets.DOWNLOAD_NODE }}
         working-directory: ./rhel-edge
 
       - name: Set result status

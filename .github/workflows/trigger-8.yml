@@ -5,8 +5,8 @@ on:
   workflow_dispatch:
 
 env:
-  COMPOSE_URL_86: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/updates/RHEL-8
-  COMPOSE_URL_87: http://download-node-02.eng.bos.redhat.com/rhel-8/nightly/RHEL-8
+  COMPOSE_URL_86: "http://${{ secrets.DOWNLOAD_NODE }}/rhel-8/nightly/updates/RHEL-8"
+  COMPOSE_URL_87: "http://${{ secrets.DOWNLOAD_NODE }}/rhel-8/nightly/RHEL-8"
 
 jobs:
   check-compose:
@@ -87,7 +87,6 @@ jobs:
           body: |
             RHEL 8.6 compose ${{ needs.check-compose.outputs.rhel86_compose }}
             - Date: ${{ steps.date.outputs.date }}
-            - Compose URL: "${{ env.COMPOSE_URL_86 }}/${{ needs.check-compose.outputs.rhel86_compose }}"
 
       - name: Enable Pull Request Automerge
         if: steps.cpr.outputs.pull-request-operation == 'created'
@@ -145,7 +144,6 @@ jobs:
           body: |
             RHEL 8.7 compose ${{ needs.check-compose.outputs.rhel87_compose }}
             - Date: ${{ steps.date.outputs.date }}
-            - Compose URL: "${{ env.COMPOSE_URL_87 }}/${{ needs.check-compose.outputs.rhel87_compose }}"
 
       - name: Enable Pull Request Automerge
         if: steps.cpr.outputs.pull-request-operation == 'created'
