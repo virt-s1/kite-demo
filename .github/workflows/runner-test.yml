@@ -1,0 +1,30 @@
+---
+name: Runner Debug
+
+on:
+  workflow_dispatch:
+
+jobs:
+  rhos01-runner-rhel92:
+    runs-on: [kite, x86_64, rhos-01, rhel-9-3, large]
+    steps:
+      - name: Show all environment variables
+        run: printenv
+
+  gcp-runner-cs9:
+    runs-on: [kite, x86_64, gcp, centos-stream-9, large]
+    steps:
+      - name: Show all environment variables
+        run: printenv
+
+  gcp-runner-fedora38:
+    runs-on: [kite, x86_64, gcp, fedora-38, large]
+    steps:
+      - name: Show all environment variables
+        run: printenv
+
+  runner-beaker-arm:
+    runs-on: [kite, aarch64, beaker, fedora-37]
+    steps:
+      - name: Show all environment variables
+        run: printenv

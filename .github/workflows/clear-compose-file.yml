@@ -3,9 +3,6 @@ name: Clear all compose files
 
 on:
   workflow_dispatch:
-  schedule:
-    # every two weeks
-    - cron: '0 0 */15 * *'
 
 jobs:
   clear-compose-file:
