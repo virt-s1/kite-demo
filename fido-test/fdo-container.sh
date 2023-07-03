@@ -201,14 +201,7 @@ sudo ostree --repo="$PROD_REPO" remote add --no-gpg-verify edge-stage "$STAGE_RE
 
 # Prepare stage repo network
 greenprint "🔧 Prepare stage repo network"
-sudo podman network inspect edge >/dev/null 2>&1 || sudo podman network create --driver=bridge --subnet=192.168.200.0/24 --gateway=192.168.200.254 edge
-
-# Clear container running env
-greenprint "🧹 Clearing container running env"
-# Remove any status containers if exist
-sudo podman ps -a -q --format "{{.ID}}" | sudo xargs --no-run-if-empty podman rm -f
-# Remove all images
-sudo podman rmi -f -a
+podman network inspect edge >/dev/null 2>&1 || podman network create --driver=bridge --subnet=192.168.200.0/24 --gateway=192.168.200.254 edge
 
 ##########################################################
 ##
@@ -218,7 +211,7 @@ sudo podman rmi -f -a
 greenprint "🔧 Generate FDO key and configuration files"
 mkdir aio
 podman run -v "$PWD"/aio/:/aio:z \
-  "quay.io/fido-fdo/aio:nightly" \
+  "localhost/aio:latest" \
   aio --directory aio generate-configs-and-keys --contact-hostname "$FDO_MANUFACTURING_ADDRESS"
 
 DIUN_PUB_KEY_ROOT_CERTS=$(sudo cat aio/keys/diun_cert.pem)
@@ -226,56 +219,51 @@ DIUN_PUB_KEY_HASH=sha256:$(openssl x509 -fingerprint -sha256 -noout -in aio/keys
 
 # Prepare FDO config files
 greenprint "🔧 Prepare FDO key and configuration files for FDO containers"
-mkdir -p fdo/keys
-cp aio/keys/* fdo/keys/
-cp data/fdo/manufacturing-server.yml fdo/
-cp data/fdo/owner-onboarding-server.yml fdo/
-cp data/fdo/rendezvous-server.yml fdo/
-cp data/fdo/serviceinfo-api-server.yml fdo/
+cp -r aio/keys fdo/
 
 # FDO user does not have password, use ssh key and no sudo password instead
-sudo /usr/local/bin/yq -iy '.service_info.initial_user |= {username: "fdouser", sshkeys: ["ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCzxo5dEcS+LDK/OFAfHo6740EyoDM8aYaCkBala0FnWfMMTOq7PQe04ahB0eFLS3IlQtK5bpgzxBdFGVqF6uT5z4hhaPjQec0G3+BD5Pxo6V+SxShKZo+ZNGU3HVrF9p2V7QH0YFQj5B8F6AicA3fYh2BVUFECTPuMpy5A52ufWu0r4xOFmbU7SIhRQRAQz2u4yjXqBsrpYptAvyzzoN4gjUhNnwOHSPsvFpWoBFkWmqn0ytgHg3Vv9DlHW+45P02QH1UFedXR2MqLnwRI30qqtaOkVS+9rE/dhnR+XPpHHG+hv2TgMDAuQ3IK7Ab5m/yCbN73cxFifH4LST0vVG3Jx45xn+GTeHHhfkAfBSCtya6191jixbqyovpRunCBKexI5cfRPtWOitM3m7Mq26r7LpobMM+oOLUm4p0KKNIthWcmK9tYwXWSuGGfUQ+Y8gt7E0G06ZGbCPHOrxJ8lYQqXsif04piONPA/c9Hq43O99KPNGShONCS9oPFdOLRT3U= ostree-image-test"]}' fdo/serviceinfo-api-server.yml
+/usr/local/bin/yq -iy '.service_info.initial_user |= {username: "fdouser", sshkeys: ["ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCzxo5dEcS+LDK/OFAfHo6740EyoDM8aYaCkBala0FnWfMMTOq7PQe04ahB0eFLS3IlQtK5bpgzxBdFGVqF6uT5z4hhaPjQec0G3+BD5Pxo6V+SxShKZo+ZNGU3HVrF9p2V7QH0YFQj5B8F6AicA3fYh2BVUFECTPuMpy5A52ufWu0r4xOFmbU7SIhRQRAQz2u4yjXqBsrpYptAvyzzoN4gjUhNnwOHSPsvFpWoBFkWmqn0ytgHg3Vv9DlHW+45P02QH1UFedXR2MqLnwRI30qqtaOkVS+9rE/dhnR+XPpHHG+hv2TgMDAuQ3IK7Ab5m/yCbN73cxFifH4LST0vVG3Jx45xn+GTeHHhfkAfBSCtya6191jixbqyovpRunCBKexI5cfRPtWOitM3m7Mq26r7LpobMM+oOLUm4p0KKNIthWcmK9tYwXWSuGGfUQ+Y8gt7E0G06ZGbCPHOrxJ8lYQqXsif04piONPA/c9Hq43O99KPNGShONCS9oPFdOLRT3U= ostree-image-test"]}' fdo/serviceinfo-api-server.yml
 # No sudo password required by ansible
-tee fdo/fdouser > /dev/null << EOF
+tee /tmp/fdouser > /dev/null << EOF
 fdouser ALL=(ALL) NOPASSWD: ALL
 EOF
-sudo /usr/local/bin/yq -iy '.service_info.files |= [{path: "/etc/sudoers.d/fdouser", source_path: "/etc/fdo/fdouser"}]' fdo/serviceinfo-api-server.yml
+/usr/local/bin/yq -iy '.service_info.files |= [{path: "/etc/sudoers.d/fdouser", source_path: "/tmp/fdouser"}]' fdo/serviceinfo-api-server.yml
 
 greenprint "🔧 Starting fdo manufacture server"
-sudo podman run -d \
+podman run -d \
   --ip "$FDO_MANUFACTURING_ADDRESS" \
   --name manufacture-server \
   --network edge \
   -v "$PWD"/fdo/:/etc/fdo/:z \
   -p 8080:8080 \
-  "quay.io/fido-fdo/manufacturing-server:nightly" 
+  "localhost/manufacturing-server:latest"
 
 greenprint "🔧 Starting fdo owner onboarding server"
-sudo podman run -d \
+podman run -d \
   --ip "$FDO_OWNER_ONBOARDING_ADDRESS" \
   --name owner-onboarding-server \
   --network edge \
   -v "$PWD"/fdo/:/etc/fdo/:z \
   -p 8081:8081 \
-  "quay.io/fido-fdo/owner-onboarding-server:nightly" 
+  "localhost/owner-onboarding-server:latest"
 
 greenprint "🔧 Starting fdo rendezvous server"
-sudo podman run -d \
+podman run -d \
   --ip "$FDO_RENDEZVOUS_ADDRESS" \
   --name rendezvous-server \
   --network edge \
   -v "$PWD"/fdo/:/etc/fdo/:z \
   -p 8082:8082 \
-  "quay.io/fido-fdo/rendezvous-server:nightly" 
+  "localhost/rendezvous-server:latest"
 
 greenprint "🔧 Starting fdo serviceinfo api server"
-sudo podman run -d \
+podman run -d \
   --ip "$FDO_SERVICEINFO_API_ADDRESS" \
   --name serviceinfo-api-server \
   --network edge \
   -v "$PWD"/fdo/:/etc/fdo/:z \
   -p 8083:8083 \
-  "quay.io/fido-fdo/serviceinfo-api-server:nightly" 
+  "localhost/serviceinfo-api-server:latest"
 
 # Wait for fdo containers to be up and running
 until [ "$(curl -X POST http://${FDO_MANUFACTURING_ADDRESS}:8080/ping)" == "pong" ]; do
@@ -330,18 +318,18 @@ sudo composer-cli compose image "${COMPOSE_ID}" > /dev/null
 # Deal with stage repo image
 greenprint "🗜 Starting container"
 IMAGE_FILENAME="${COMPOSE_ID}-${CONTAINER_FILENAME}"
-sudo podman pull "oci-archive:${IMAGE_FILENAME}"
-sudo podman images
+podman pull "oci-archive:${IMAGE_FILENAME}"
+podman images
 # Run edge stage repo
 greenprint "🛰 Running edge stage repo"
 # Get image id to run image
-EDGE_IMAGE_ID=$(sudo podman images --filter "dangling=true" --format "{{.ID}}")
-sudo podman run -d --name rhel-edge --network edge --ip "$STAGE_REPO_ADDRESS" "$EDGE_IMAGE_ID"
+EDGE_IMAGE_ID=$(podman images --filter "dangling=true" --format "{{.ID}}")
+podman run -d --name rhel-edge --network edge --ip "$STAGE_REPO_ADDRESS" "$EDGE_IMAGE_ID"
 # Clear image file
 sudo rm -f "$IMAGE_FILENAME"
 
 # Wait for container to be running
-until [ "$(sudo podman inspect -f '{{.State.Running}}' rhel-edge)" == "true" ]; do
+until [ "$(podman inspect -f '{{.State.Running}}' rhel-edge)" == "true" ]; do
     sleep 1;
 done;
 
