@@ -91,7 +91,7 @@ jobs:
           ref: ${{ needs.pr-info.outputs.sha }}
           fetch-depth: 0
 
-      - name: Checkout osbuild code
+      - name: Checkout fido-device-onboard-rs code
         uses: actions/checkout@v3
         with:
           repository: fedora-iot/fido-device-onboard-rs
@@ -100,9 +100,14 @@ jobs:
       - name: Build fido containers
         uses: ./.github/actions/build_containers
 
+      - name: Replace Makefile and make-vendored-tarfile.sh
+        run: |
+          cp fido-test/make-vendored-tarfile.sh fido/
+          cp fido-test/Makefile fido/
+
       - name: Build fido PRM pakcages
         run: make rpm
-        working-directory: ./fido
+        working-directory: fido
 
       - name: Prepare
         run: |
@@ -113,7 +118,7 @@ jobs:
 
       - name: Run fdo-container.sh test
         run: ./fdo-container.sh
-        working-directory: ./fido-test
+        working-directory: fido-test
         timeout-minutes: 100
 
       - name: Set result status
