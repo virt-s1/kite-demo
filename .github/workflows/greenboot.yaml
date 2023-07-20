@@ -111,7 +111,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   greenboot-rs-rawhide:
-    needs: [pr-info, pre-greenboot-rs-rawhide]
+    needs: [pr-info, comment-info, pre-greenboot-rs-rawhide]
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' }} &&
             (startsWith(github.event.comment.body, '/greenboot-rs-test-all') ||
             startsWith(github.event.comment.body, '/greenboot-rs-test-rawhide'))}}
@@ -170,17 +170,23 @@ jobs:
       # Only run when PR has osbuild-composer dependence
       - name: Checkout osbuild-composer code
         if: ${{ needs.comment-info.outputs.osbuild-composer_branch != 'main' }} || ${{ needs.comment-info.outputs.images_branch != 'main' }}
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ needs.comment-info.outputs.osbuild-composer_repo }}
-          ref: ${{ needs.comment-info.outputs.osbuild-composer_branch }}
-          path: osbuild-composer
+        run: git clone -b ${{ needs.comment-info.outputs.osbuild-composer_branch }} https://github.com/${{ needs.comment-info.outputs.osbuild-composer_repo }}
+        # uses: actions/checkout@v3
+        # with:
+        #   repository: ${{ needs.comment-info.outputs.osbuild-composer_repo }}
+        #   ref: ${{ needs.comment-info.outputs.osbuild-composer_branch }}
+        #   path: osbuild-composer
 
       - name: Build osbuild-composer
         if: ${{ needs.comment-info.outputs.osbuild-composer_branch != 'main' }} || ${{ needs.comment-info.outputs.images_branch != 'main' }}
         run: |
+          ls -al
+          pwd
+          git status
+          ls -a ../images
+          git -C ../images status
           go mod edit -replace github.com/osbuild/images=../images
-          ./tools/prepare-source.sh
+          GOPROXY=direct GOSUMDB=off ./tools/prepare-source.sh
 
           git config --global user.name "greenboot bot"
           git config --global user.email "greenboot-bot@greenboot.com"
