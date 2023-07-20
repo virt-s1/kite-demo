@@ -206,6 +206,8 @@ jobs:
           EOF
 
           sudo dnf info osbuild osbuild-composer
+        env:
+          GO111MODULE: auto
         working-directory: ./osbuild-composer
 
       - name: Run greenboot-rs.sh test
