@@ -111,7 +111,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   greenboot-rs-rawhide:
-    needs: [pr-info, pre-greenboot-rs-rawhide]
+    needs: [pr-info, comment-info, pre-greenboot-rs-rawhide]
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' }} &&
             (startsWith(github.event.comment.body, '/greenboot-rs-test-all') ||
             startsWith(github.event.comment.body, '/greenboot-rs-test-rawhide'))}}
@@ -170,6 +170,7 @@ jobs:
       # Only run when PR has osbuild-composer dependence
       - name: Checkout osbuild-composer code
         if: ${{ needs.comment-info.outputs.osbuild-composer_branch != 'main' }} || ${{ needs.comment-info.outputs.images_branch != 'main' }}
+        # run: git clone -b ${{ needs.comment-info.outputs.osbuild-composer_branch }} https://github.com/${{ needs.comment-info.outputs.osbuild-composer_repo }}
         uses: actions/checkout@v3
         with:
           repository: ${{ needs.comment-info.outputs.osbuild-composer_repo }}
