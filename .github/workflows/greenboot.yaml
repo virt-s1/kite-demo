@@ -180,6 +180,7 @@ jobs:
       - name: Build osbuild-composer
         if: ${{ needs.comment-info.outputs.osbuild-composer_branch != 'main' }} || ${{ needs.comment-info.outputs.images_branch != 'main' }}
         run: |
+          go mod init
           go mod edit -replace github.com/osbuild/images=../images
           ./tools/prepare-source.sh
 
