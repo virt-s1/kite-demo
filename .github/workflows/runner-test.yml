@@ -34,6 +34,7 @@ jobs:
   gcp-runner-fedora-38:
     runs-on: [kite, x86_64, gcp, fedora-38, medium]
     steps:
+      - uses: actions/checkout@v3
       - name: Show all environment variables
         run: printenv
       - name: Show system info
@@ -44,18 +45,19 @@ jobs:
           lscpu
           free -mh
 
-  gcp-runner-fedora-37:
-    runs-on: [kite, x86_64, gcp, fedora-37, medium]
-    steps:
-      - name: Show all environment variables
-        run: printenv
-      - name: Show system info
-        run: cat /etc/os-release
-      - name: Show system arch
-        run: |
-          uname -a
-          lscpu
-          free -mh
+  # gcp-runner-fedora-37:
+  #   runs-on: [kite, x86_64, gcp, fedora-37, medium]
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Show all environment variables
+  #       run: printenv
+  #     - name: Show system info
+  #       run: cat /etc/os-release
+  #     - name: Show system arch
+  #       run: |
+  #         uname -a
+  #         lscpu
+  #         free -mh
 
   # runner-beaker-arm:
   #   runs-on: [kite, aarch64, beaker, fedora-37]
