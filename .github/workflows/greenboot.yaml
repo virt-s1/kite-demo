@@ -185,6 +185,8 @@ jobs:
           git status
           ls -a ../images
           git -C ../images status
+          go clean -modcache
+          go mod tidy
           go mod edit -replace github.com/osbuild/images=../images
           GOPROXY=direct GOSUMDB=off ./tools/prepare-source.sh
 
