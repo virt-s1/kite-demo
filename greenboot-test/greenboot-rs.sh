@@ -32,9 +32,9 @@ SSH_KEY=key/ostree_key
 
 # Set os-variant and boot location used by virt-install.
 case "${ID}-${VERSION_ID}" in
-    "fedora-39")
+    "fedora-"*"")
         IMAGE_TYPE=fedora-iot-commit
-        OSTREE_REF="fedora/39/${ARCH}/iot"
+        OSTREE_REF="fedora/${VERSION_ID}/${ARCH}/iot"
         OS_VARIANT="fedora-rawhide"
         BOOT_LOCATION="https://dl.fedoraproject.org/pub/fedora/linux/development/rawhide/Everything/x86_64/os/"
         ;;
