@@ -44,6 +44,7 @@ jobs:
           uname -a
           lscpu
           free -mh
+          sleep 2h
 
   # gcp-runner-fedora-37:
   #   runs-on: [kite, x86_64, gcp, fedora-37, medium]
