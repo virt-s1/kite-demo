@@ -31,20 +31,32 @@ jobs:
   #         lscpu
   #         free -mh
 
+  # gcp-runner-fedora-38:
+  #   runs-on: [kite, x86_64, gcp, fedora-38, medium]
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Show all environment variables
+  #       run: printenv
+  #     - name: Show system info
+  #       run: cat /etc/os-release
+  #     - name: Show system arch
+  #       run: |
+  #         uname -a
+  #         lscpu
+  #         free -mh
+  #         sleep 2h
+
   gcp-runner-fedora-38:
     runs-on: [kite, x86_64, gcp, fedora-38, medium]
     steps:
       - uses: actions/checkout@v3
-      - name: Show all environment variables
-        run: printenv
-      - name: Show system info
-        run: cat /etc/os-release
-      - name: Show system arch
-        run: |
-          uname -a
-          lscpu
-          free -mh
-          sleep 2h
+        with:
+          repository: virt-s1/rhel-edge
+
+      - run: ./ostree-raw-image.sh
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
 
   # gcp-runner-fedora-37:
   #   runs-on: [kite, x86_64, gcp, fedora-37, medium]
