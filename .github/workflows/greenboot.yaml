@@ -142,8 +142,8 @@ jobs:
       - name: Checkout greenboot-rs code
         uses: actions/checkout@v3
         with:
-          repository: say-paul/greenboot
-          ref: greenboot-rs-continued
+          repository: yih-redhat/greenboot
+          ref: test-ci
           path: greenboot
 
       - name: Build greenboot PRM pakcages
