@@ -10,7 +10,7 @@ jobs:
   pr-info:
     if: ${{ github.event.issue.pull_request &&
             (startsWith(github.event.comment.body, '/greenboot-rs-test-all') ||
-            startsWith(github.event.comment.body, '/greenboot-rs-test-rawhide')) }}
+            startsWith(github.event.comment.body, '/greenboot-rs-test-39')) }}
     runs-on: ubuntu-latest
     steps:
       - name: Query author repository permissions
@@ -89,14 +89,14 @@ jobs:
       osbuild-composer_repo: ${{ steps.comment-analysis.outputs.osbuild-composer_repo }}
       osbuild-composer_branch: ${{ steps.comment-analysis.outputs.osbuild-composer_branch }}
 
-  pre-greenboot-rs-rawhide:
+  pre-greenboot-rs-39:
     needs: pr-info
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' }} &&
             (startsWith(github.event.comment.body, '/greenboot-rs-test-all') ||
-            startsWith(github.event.comment.body, '/greenboot-rs-test-rawhide'))}}
+            startsWith(github.event.comment.body, '/greenboot-rs-test-39'))}}
     runs-on: ubuntu-latest
     env:
-      STATUS_NAME: greenboot-rs-rawhide
+      STATUS_NAME: greenboot-rs-39
 
     steps:
       - name: Create in-progress status
@@ -110,14 +110,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  greenboot-rs-rawhide:
-    needs: [pr-info, comment-info, pre-greenboot-rs-rawhide]
+  greenboot-rs-39:
+    needs: [pr-info, comment-info, pre-greenboot-rs-39]
     if: ${{ needs.pr-info.outputs.allowed_user == 'true' }} &&
             (startsWith(github.event.comment.body, '/greenboot-rs-test-all') ||
-            startsWith(github.event.comment.body, '/greenboot-rs-test-rawhide'))}}
-    runs-on: [kite, x86_64, gcp, fedora-rawhide, large]
+            startsWith(github.event.comment.body, '/greenboot-rs-test-39'))}}
+    runs-on: [kite, x86_64, gcp, fedora-39, large]
     env:
-      STATUS_NAME: greenboot-rs-rawhide
+      STATUS_NAME: greenboot-rs-39
 
     steps:
       - name: Create in-progress status
