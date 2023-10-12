@@ -35,8 +35,8 @@ case "${ID}-${VERSION_ID}" in
     "fedora-"*)
         IMAGE_TYPE=fedora-iot-commit
         OSTREE_REF="fedora/${VERSION_ID}/${ARCH}/iot"
-        OS_VARIANT="fedora-rawhide"
-        BOOT_LOCATION="https://dl.fedoraproject.org/pub/fedora/linux/development/rawhide/Everything/x86_64/os/"
+        OS_VARIANT="fedora-unknown"
+        BOOT_LOCATION="https://dl.fedoraproject.org/pub/fedora/linux/development/39/Everything/x86_64/os/"
         ;;
     *)
         echo "unsupported distro: ${ID}-${VERSION_ID}"
