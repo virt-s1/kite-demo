@@ -357,7 +357,7 @@ sudo composer-cli blueprints delete upgrade > /dev/null
 # Introduce new ostree commit into repo.
 greenprint "Introduce new ostree commit into repo"
 sudo ostree pull-local --repo "${HTTPD_PATH}/repo" "${UPGRADE_PATH}/repo" "$OSTREE_REF"
-sudo ostree --repo="${HTTPD_PATH}/repo" static-delta generate "$OSTREE_REF"
+# sudo ostree --repo="${HTTPD_PATH}/repo" static-delta generate "$OSTREE_REF"
 sudo ostree summary --update --repo "${HTTPD_PATH}/repo"
 
 # Ensure SELinux is happy with all objects files.
