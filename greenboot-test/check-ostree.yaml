@@ -139,10 +139,10 @@
             failed_counter: "{{ failed_counter | int + 1 }}"
 
     # case: check greenboot services
-    - name: greenboot service should be enabled
+    - name: greenboot services should be enabled
       block:
-        - name: greenboot service should be enabled
-          command: systemctl is-enabled greenboot.service greenboot-rollback.service
+        - name: greenboot services should be enabled
+          command: systemctl is-enabled greenboot-healthcheck.service greenboot-rollback.service
           register: result_greenboot_service
 
         - assert:
@@ -158,10 +158,10 @@
           set_fact:
             failed_counter: "{{ failed_counter | int + 1 }}"
 
-    - name: greenboot service should be active
+    - name: greenboot-healthcheck service should be active
       block:
-        - name: greenboot service should be active
-          command: systemctl is-active greenboot.service
+        - name: greenboot-healthcheck service should be active
+          command: systemctl is-active greenboot-healthcheck.service
           register: result_greenboot_service
 
         - assert:
@@ -345,7 +345,7 @@
 
         - assert:
             that:
-              - "'Greenboot will now attempt rollback' in result_greenboot_log.stdout"
+              - "'Greenboot will now attempt to rollback' in result_greenboot_log.stdout"
               - "'Rollback successful' in result_greenboot_log.stdout"
             fail_msg: "Fallback log not found"
             success_msg: "Found fallback log"
