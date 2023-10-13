@@ -1,232 +1,388 @@
 ---
-name: greenboot rs integration test
+- hosts: ostree_guest
+  become: no
+  vars:
+    total_counter: "0"
+    failed_counter: "0"
 
-on:
-  issue_comment:
-    types:
-      - created
+  tasks:
 
-jobs:
-  pr-info:
-    if: ${{ github.event.issue.pull_request &&
-            (startsWith(github.event.comment.body, '/greenboot-rs-test-all') ||
-            startsWith(github.event.comment.body, '/greenboot-rs-test-39')) }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Query author repository permissions
-        uses: octokit/request-action@v2.x
-        id: user_permission
-        with:
-          route: GET /repos/${{ github.repository }}/collaborators/${{ github.event.sender.login }}/permission
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # current target host's IP address
+    - debug: var=ansible_all_ipv4_addresses
+    - debug: var=ansible_facts['distribution_version']
+    - debug: var=ansible_facts['distribution']
+    - debug: var=ansible_facts['architecture']
 
-      # restrict running of tests to users with admin or write permission for the repository
-      # see https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#get-repository-permissions-for-a-user
-      - name: Check if user does have correct permissions
-        if: contains('admin write', fromJson(steps.user_permission.outputs.data).permission)
-        id: check_user_perm
-        run: |
-          echo "User '${{ github.event.sender.login }}' has permission '${{ fromJson(steps.user_permission.outputs.data).permission }}' allowed values: 'admin', 'write'"
-          echo "allowed_user=true" >> $GITHUB_OUTPUT
-      - name: Get information for pull request
-        uses: octokit/request-action@v2.x
-        id: pr-api
-        with:
-          route: GET /repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # check BIOS or UEFI
+    - name: check bios or uefi
+      stat:
+        path: /sys/firmware/efi
 
-    outputs:
-      allowed_user: ${{ steps.check_user_perm.outputs.allowed_user }}
-      sha: ${{ fromJson(steps.pr-api.outputs.data).head.sha }}
+    # check secure boot status if it's enabled
+    - name: check secure boot status
+      command: mokutil --sb-state
+      ignore_errors: yes
 
-  comment-info:
-    needs: pr-info
-    if: ${{ needs.pr-info.outputs.allowed_user == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: PR comment analysis
-        id: comment-analysis
-        run: |
-          comment_content="${{ github.event.comment.body }}"
-          comment_array=($comment_content)
-          comment_arg_len=${#comment_array[@]}
+    - name: check partition size
+      command: df -h
+      ignore_errors: yes
+      become: yes
 
-          echo ${comment_array[@]}
-          echo $comment_arg_len
+    - name: check disk partition table
+      command: fdisk -l
+      ignore_errors: yes
+      become: yes
 
-          # Default to osbuild and osbuild-composer main branch
-          IMAGES_REPO="osbuild/images"
-          IMAGES_BRANCH="main"
-          OSBUILD_COMPOSER_REPO="osbuild/osbuild-composer"
-          OSBUILD_COMPOSER_BRANCH="main"
+    - name: check rpm-ostree status
+      command: rpm-ostree status
+      ignore_errors: yes
 
-          for item in "${comment_array[@]}"; do
-              if [[ "$item" =~ "/images:" ]]; then
-                  IMAGES_REPO="$(echo $item | cut -d: -f1)"
-                  IMAGES_BRANCH="$(echo $item | cut -d: -f2)"
-              fi
-              if [[ "$item" =~ "/osbuild-composer:" ]]; then
-                  OSBUILD_COMPOSER_REPO="$(echo $item | cut -d: -f1)"
-                  OSBUILD_COMPOSER_BRANCH="$(echo $item | cut -d: -f2)"
-              fi
-          done
+    - name: check installed kernel
+      command: uname -r
+      register: result_kernel
 
-          echo $IMAGES_REPO
-          echo $IMAGES_BRANCH
-          echo $OSBUILD_COMPOSER_REPO
-          echo $OSBUILD_COMPOSER_BRANCH
+    # first installed or upgraded
+    - name: determin which stage the checking is running on
+      shell: rpm-ostree status --json | jq '.deployments | length'
+      register: result_stage
 
-          echo "images_repo=$IMAGES_REPO" >> $GITHUB_OUTPUT
-          echo "images_branch=$IMAGES_BRANCH" >> $GITHUB_OUTPUT
-          echo "osbuild-composer_repo=$OSBUILD_COMPOSER_REPO" >> $GITHUB_OUTPUT
-          echo "osbuild-composer_branch=$OSBUILD_COMPOSER_BRANCH" >> $GITHUB_OUTPUT
+    - set_fact:
+        checking_stage: "{{ result_stage.stdout }}"
 
-    outputs:
-      images_repo: ${{ steps.comment-analysis.outputs.images_repo }}
-      images_branch: ${{ steps.comment-analysis.outputs.images_branch }}
-      osbuild-composer_repo: ${{ steps.comment-analysis.outputs.osbuild-composer_repo }}
-      osbuild-composer_branch: ${{ steps.comment-analysis.outputs.osbuild-composer_branch }}
+    # case: check ostree commit correctly updated
+    - name: get deployed ostree commit
+      shell: rpm-ostree status --json | jq -r '.deployments[0].checksum'
+      register: result_commit
 
-  pre-greenboot-rs-39:
-    needs: pr-info
-    if: ${{ needs.pr-info.outputs.allowed_user == 'true' }} &&
-            (startsWith(github.event.comment.body, '/greenboot-rs-test-all') ||
-            startsWith(github.event.comment.body, '/greenboot-rs-test-39'))}}
-    runs-on: ubuntu-latest
-    env:
-      STATUS_NAME: greenboot-rs-39
+    - name: make a json result
+      set_fact:
+        deploy_commit: "{{ result_commit.stdout }}"
 
-    steps:
-      - name: Create in-progress status
-        uses: octokit/request-action@v2.x
-        with:
-          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
-          context: ${{ env.STATUS_NAME }}
-          state: pending
-          description: 'Deploy runner'
-          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: check commit deployed and built
+      block:
+        - assert:
+            that:
+              - deploy_commit == ostree_commit
+            fail_msg: "deployed ostree commit is not commit built by osbuild-composer"
+            success_msg: "successful building and deployment"
+      always:
+        - set_fact:
+            total_counter: "{{ total_counter | int + 1 }}"
+      rescue:
+        - name: failed count + 1
+          set_fact:
+            failed_counter: "{{ failed_counter | int + 1 }}"
 
-  greenboot-rs-39:
-    needs: [pr-info, comment-info, pre-greenboot-rs-39]
-    if: ${{ needs.pr-info.outputs.allowed_user == 'true' }} &&
-            (startsWith(github.event.comment.body, '/greenboot-rs-test-all') ||
-            startsWith(github.event.comment.body, '/greenboot-rs-test-39'))}}
-    runs-on: [kite, x86_64, gcp, fedora-39, large]
-    env:
-      STATUS_NAME: greenboot-rs-39
+    # case: check ostree ref
+    - name: check ostree ref
+      shell: rpm-ostree status --json | jq -r '.deployments[0].origin'
+      register: result_ref
 
-    steps:
-      - name: Create in-progress status
-        uses: octokit/request-action@v2.x
-        with:
-          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
-          context: ${{ env.STATUS_NAME }}
-          state: pending
-          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: check ostree ref deployed
+      block:
+        - assert:
+            that:
+              - result_ref.stdout == ostree_ref
+            fail_msg: "deployed ostree ref failed"
+            success_msg: "ostree ref successful building and deployment"
+      always:
+        - set_fact:
+            total_counter: "{{ total_counter | int + 1 }}"
+      rescue:
+        - name: failed count + 1
+          set_fact:
+            failed_counter: "{{ failed_counter | int + 1 }}"
 
-      - name: Install required packages
-        run: sudo dnf install -y make gcc openssl openssl-devel findutils golang git tpm2-tss-devel swtpm swtpm-tools clevis clevis-luks cryptsetup cryptsetup-devel clang-devel cracklib-dicts rust cargo rust-packaging rpmdevtools python3-docutils createrepo_c libassuan-devel krb5-devel gpgme-devel go-rpm-macros
+    - name: check mount point device name
+      command: findmnt
 
-      - name: Clone repository
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ needs.pr-info.outputs.sha }}
-          fetch-depth: 0
+    # case: check wget installed after upgrade
+    - name: check installed package
+      shell: rpm -qa | sort
+      register: result_packages
 
-      - name: Checkout greenboot-rs code
-        uses: actions/checkout@v3
-        with:
-          repository: say-paul/greenboot
-          ref: greenboot-rs-continued
-          path: greenboot
+    - name: check wget installed
+      block:
+        - assert:
+            that:
+              - "'wget' in result_packages.stdout"
+            fail_msg: "wget not installed, ostree upgrade might be failed"
+            success_msg: "wget installed in ostree upgrade"
+      always:
+        - set_fact:
+            total_counter: "{{ total_counter | int + 1 }}"
+      rescue:
+        - name: failed count + 1
+          set_fact:
+            failed_counter: "{{ failed_counter | int + 1 }}"
+      when: checking_stage == "2"
 
-      - name: Build greenboot PRM pakcages
-        run: make rpm
-        working-directory: greenboot
+    # case: check installed greenboot packages
+    - name: greenboot should be installed
+      block:
+        - name: greenboot should be installed
+          shell: rpm -qa | grep greenboot
+          register: result_greenboot_packages
 
-      - name: Prepare greenboot
-        run: |
-          sudo mkdir -p /var/www/html/source
-          sudo cp ./greenboot/rpmbuild/RPMS/x86_64/* /var/www/html/source/ 2>/dev/null || :
-          sudo createrepo_c /var/www/html/source
-          sudo restorecon -Rv /var/www/html/source
-          sudo ls -al /var/www/html/source
+        - assert:
+            that:
+              - "'greenboot-1' in result_greenboot_packages.stdout"
+              - "'greenboot-default-health-checks' in result_greenboot_packages.stdout"
+            fail_msg: "greenboot is not installed"
+            success_msg: "greenboot is installed"
+      always:
+        - set_fact:
+            total_counter: "{{ total_counter | int + 1 }}"
+      rescue:
+        - name: failed count + 1
+          set_fact:
+            failed_counter: "{{ failed_counter | int + 1 }}"
 
-      # Only run when PR has osbuild-composer dependence
-      - name: Checkout images code
-        if: ${{ needs.comment-info.outputs.images_branch != 'main' }} || ${{ needs.comment-info.outputs.osbuild-composer_branch != 'main' }}
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ needs.comment-info.outputs.images_repo }}
-          ref: ${{ needs.comment-info.outputs.images_branch }}
-          path: images
+    # case: check greenboot services
+    - name: greenboot services should be enabled
+      block:
+        - name: greenboot services should be enabled
+          command: systemctl is-enabled greenboot-healthcheck.service greenboot-rollback.service
+          register: result_greenboot_service
 
-      # Only run when PR has osbuild-composer dependence
-      - name: Checkout osbuild-composer code
-        if: ${{ needs.comment-info.outputs.osbuild-composer_branch != 'main' }} || ${{ needs.comment-info.outputs.images_branch != 'main' }}
-        run: git clone -b ${{ needs.comment-info.outputs.osbuild-composer_branch }} https://github.com/${{ needs.comment-info.outputs.osbuild-composer_repo }}
-        # uses: actions/checkout@v3
-        # with:
-        #   repository: ${{ needs.comment-info.outputs.osbuild-composer_repo }}
-        #   ref: ${{ needs.comment-info.outputs.osbuild-composer_branch }}
-        #   path: osbuild-composer
+        - assert:
+            that:
+              - result_greenboot_service.stdout == 'enabled\nenabled'
+            fail_msg: "greenboot services are not enabled"
+            success_msg: "greenboot services are enabled"
+      always:
+        - set_fact:
+            total_counter: "{{ total_counter | int + 1 }}"
+      rescue:
+        - name: failed count + 1
+          set_fact:
+            failed_counter: "{{ failed_counter | int + 1 }}"
 
-      - name: Build osbuild-composer
-        if: ${{ needs.comment-info.outputs.osbuild-composer_branch != 'main' }} || ${{ needs.comment-info.outputs.images_branch != 'main' }}
-        run: |
-          ls -al
-          pwd
-          git status
-          ls -a ../images
-          git -C ../images status
-          go clean -modcache
-          go mod tidy
-          go mod edit -replace github.com/osbuild/images=../images
-          GOPROXY=direct GOSUMDB=off ./tools/prepare-source.sh
+    - name: greenboot-healthcheck service should be active
+      block:
+        - name: greenboot-healthcheck service should be active
+          command: systemctl is-active greenboot-healthcheck.service
+          register: result_greenboot_service
 
-          git config --global user.name "greenboot bot"
-          git config --global user.email "greenboot-bot@greenboot.com"
-          git status
-          git add -A
-          git commit -m "new build for greenboot test"
+        - assert:
+            that:
+              - result_greenboot_service.stdout == 'active'
+            fail_msg: "greenboot services are not active"
+            success_msg: "greenboot services are active"
+      always:
+        - set_fact:
+            total_counter: "{{ total_counter | int + 1 }}"
+      rescue:
+        - name: failed count + 1
+          set_fact:
+            failed_counter: "{{ failed_counter | int + 1 }}"
 
-          make rpm
+    # case: check greenboot and greenboot-rollback services log
+    - name: greenboot service should run without error
+      block:
+        - name: all greenboot and greenboot-healthcheck services should run without error
+          command: journalctl -b -0 -u greenboot -u greenboot-healthcheck
+          become: yes
+          register: result_greenboot_log
 
-          sudo cp rpmbuild/RPMS/x86_64/* /var/www/html/source/
-          sudo ls -al /var/www/html/source/
-          sudo createrepo_c /var/www/html/source
-          sudo restorecon -Rv /var/www/html/source
+        - assert:
+            that:
+              - "'greenboot health-check passed' in result_greenboot_log.stdout"
+            fail_msg: "Some errors happened in service boot"
+            success_msg: "All greenboot services booted success"
 
-          sudo tee "/etc/yum.repos.d/source.repo" > /dev/null << EOF
-          [source]
-          name = source
-          baseurl = file:///var/www/html/source/
-          enabled = 1
-          gpgcheck = 0
-          priority = 5
-          EOF
+      always:
+        - set_fact:
+            total_counter: "{{ total_counter | int + 1 }}"
+      rescue:
+        - name: failed count + 1
+          set_fact:
+            failed_counter: "{{ failed_counter | int + 1 }}"
 
-          sudo dnf info osbuild osbuild-composer
-        working-directory: ./osbuild-composer
+    # case: check grubenv variables
+    - name: grubenv variables should contain boot_success=1
+      block:
+        - name: grubenv variables should contain boot_success=1
+          command: grub2-editenv list
+          register: result_grubenv
+          become: yes
 
-      - name: Run greenboot-rs.sh test
-        run: ./greenboot-rs.sh
-        working-directory: greenboot-test
-        timeout-minutes: 100
+        - assert:
+            that:
+              - "'boot_success=1' in result_grubenv.stdout"
+            fail_msg: "Not found boot_success=1"
+            success_msg: "Found boot_success=1"
+      always:
+        - set_fact:
+            total_counter: "{{ total_counter | int + 1 }}"
+      rescue:
+        - name: failed count + 1
+          set_fact:
+            failed_counter: "{{ failed_counter | int + 1 }}"
 
-      - name: Set result status
-        if: always()
-        uses: octokit/request-action@v2.x
-        with:
-          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
-          context: ${{ env.STATUS_NAME }}
-          state: ${{ job.status }}
-          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # case: check rollback function if boot error found
+    - name: install sanely failing health check unit to test red boot status behavior
+      block:
+        - name: install sanely failing health check unit to test red boot status behavior
+          command: rpm-ostree install --cache-only https://kite-webhook-prod.s3.amazonaws.com/greenboot-failing-unit-1.0-1.el8.noarch.rpm --reboot
+          become: yes
+          ignore_errors: yes
+          ignore_unreachable: yes
+
+        - block:
+            - name: delay 60 seconds after reboot to make system stable
+              pause:
+                seconds: 60
+              delegate_to: 127.0.0.1
+
+            - name: wait for connection to become reachable/usable
+              wait_for_connection:
+                delay: 30
+              register: result_rebooting
+
+            - name: waits until instance is reachable
+              wait_for:
+                host: "{{ ansible_all_ipv4_addresses[0] }}"
+                port: 22
+                search_regex: OpenSSH
+                delay: 10
+              register: result_rollback
+              until: result_rollback is success
+              retries: 6
+              delay: 10
+              ignore_unreachable: yes
+
+            - fail:
+                msg: "Failed here for unreachable to run rescue"
+              when: result_rollback.unreachable is defined
+
+          rescue:
+            # manual reboot VM to workaround vm reboot failed issue
+            - name: check vm name
+              community.libvirt.virt:
+                command: list_vms
+              become: yes
+              register: all_vms
+              delegate_to: 127.0.0.1
+
+            - set_fact:
+                vm_name: "{{ item }}"
+              loop: "{{ all_vms.list_vms }}"
+              when: item is match ("ostree-.*")
+
+            - debug: var=vm_name
+
+            - name: stop vm "{{ vm_name }}"
+              community.libvirt.virt:
+                name: "{{ vm_name }}"
+                command: destroy
+              become: yes
+              delegate_to: 127.0.0.1
+
+            - name: start vm "{{ vm_name }}"
+              community.libvirt.virt:
+                name: "{{ vm_name }}"
+                command: start
+              become: yes
+              delegate_to: 127.0.0.1
+
+            - name: wait for connection to become reachable/usable
+              wait_for_connection:
+                delay: 30
+
+            - name: waits until instance is reachable
+              wait_for:
+                host: "{{ ansible_all_ipv4_addresses[0] }}"
+                port: 22
+                search_regex: OpenSSH
+                delay: 10
+              register: result_rollback
+              until: result_rollback is success
+              retries: 6
+              delay: 10
+
+        - assert:
+            that:
+              - result_rollback is succeeded
+            fail_msg: "Rollback failed"
+            success_msg: "Rollback success"
+      always:
+        - set_fact:
+            total_counter: "{{ total_counter | int + 1 }}"
+      rescue:
+        - name: failed count + 1
+          set_fact:
+            failed_counter: "{{ failed_counter | int + 1 }}"
+
+    # case: check ostree commit after rollback
+    - name: check ostree commit after rollback
+      block:
+        - name: check ostree commit after rollback
+          shell: rpm-ostree status --json | jq -r '.deployments[0].checksum'
+          register: result_commit
+
+        - assert:
+            that:
+              - deploy_commit == ostree_commit
+            fail_msg: "Not rollbackto last commit"
+            success_msg: "Rollback success"
+      always:
+        - set_fact:
+            total_counter: "{{ total_counter | int + 1 }}"
+      rescue:
+        - name: failed count + 1
+          set_fact:
+            failed_counter: "{{ failed_counter | int + 1 }}"
+      when: result_rollback is succeeded
+
+    # case: check greenboot* services log again
+    - name: fallback log should be found here
+      block:
+        - name: fallback log should be found here
+          command: journalctl -u greenboot-rollback
+          become: yes
+          register: result_greenboot_log
+
+        - assert:
+            that:
+              - "'Greenboot will now attempt rollback' in result_greenboot_log.stdout"
+              - "'Rollback successful' in result_greenboot_log.stdout"
+            fail_msg: "Fallback log not found"
+            success_msg: "Found fallback log"
+
+      always:
+        - set_fact:
+            total_counter: "{{ total_counter | int + 1 }}"
+      rescue:
+        - name: failed count + 1
+          set_fact:
+            failed_counter: "{{ failed_counter | int + 1 }}"
+      when: result_rollback is succeeded
+
+    # case: check grubenv variables again
+    - name: grubenv variables should contain boot_success=1
+      block:
+        - name: grubenv variables should contain boot_success=1
+          command: grub2-editenv list
+          register: result_grubenv
+          become: yes
+
+        - assert:
+            that:
+              - "'boot_success=1' in result_grubenv.stdout"
+            fail_msg: "Not found boot_success=1"
+            success_msg: "Found boot_success=1"
+      always:
+        - set_fact:
+            total_counter: "{{ total_counter | int + 1 }}"
+      rescue:
+        - name: failed count + 1
+          set_fact:
+            failed_counter: "{{ failed_counter | int + 1 }}"
+      when: result_rollback is succeeded
+
+    - assert:
+        that:
+          - failed_counter == "0"
+        fail_msg: "Run {{ total_counter }} tests, but {{ failed_counter }} of them failed"
+        success_msg: "Totally {{ total_counter }} test passed"
