@@ -345,7 +345,7 @@
 
         - assert:
             that:
-              - "'Greenboot will now attempt rollback' in result_greenboot_log.stdout"
+              - "'Greenboot will now attempt to rollback' in result_greenboot_log.stdout"
               - "'Rollback successful' in result_greenboot_log.stdout"
             fail_msg: "Fallback log not found"
             success_msg: "Found fallback log"
