@@ -29,6 +29,7 @@ jobs:
         run: |
           echo "User '${{ github.event.sender.login }}' has permission '${{ fromJson(steps.user_permission.outputs.data).permission }}' allowed values: 'admin', 'write'"
           echo "allowed_user=true" >> $GITHUB_OUTPUT
+          
       - name: Get information for pull request
         uses: octokit/request-action@v2.x
         id: pr-api
@@ -40,6 +41,7 @@ jobs:
     outputs:
       allowed_user: ${{ steps.check_user_perm.outputs.allowed_user }}
       sha: ${{ fromJson(steps.pr-api.outputs.data).head.sha }}
+      base_ref: ${{ fromJson(steps.pr-api.outputs.data).base.ref }}
 
   comment-info:
     needs: pr-info
@@ -91,9 +93,10 @@ jobs:
 
   pre-greenboot-rs-39:
     needs: pr-info
-    if: ${{ needs.pr-info.outputs.allowed_user == 'true' }} &&
+    if: ${{ needs.pr-info.outputs.base_ref == 'greenboot-rs' &&
+            needs.pr-info.outputs.allowed_user == 'true' &&
             (startsWith(github.event.comment.body, '/greenboot-rs-test-all') ||
-            startsWith(github.event.comment.body, '/greenboot-rs-test-39'))}}
+            startsWith(github.event.comment.body, '/greenboot-rs-test-39')) }}
     runs-on: ubuntu-latest
     env:
       STATUS_NAME: greenboot-rs-39
@@ -112,9 +115,10 @@ jobs:
 
   greenboot-rs-39:
     needs: [pr-info, comment-info, pre-greenboot-rs-39]
-    if: ${{ needs.pr-info.outputs.allowed_user == 'true' }} &&
+    if: ${{ needs.pr-info.outputs.base_ref == 'greenboot-rs' &&
+            needs.pr-info.outputs.allowed_user == 'true' &&
             (startsWith(github.event.comment.body, '/greenboot-rs-test-all') ||
-            startsWith(github.event.comment.body, '/greenboot-rs-test-39'))}}
+            startsWith(github.event.comment.body, '/greenboot-rs-test-39')) }}
     runs-on: [kite, x86_64, gcp, fedora-39, large]
     env:
       STATUS_NAME: greenboot-rs-39
@@ -139,13 +143,6 @@ jobs:
           ref: ${{ needs.pr-info.outputs.sha }}
           fetch-depth: 0
 
-      - name: Checkout greenboot-rs code
-        uses: actions/checkout@v3
-        with:
-          repository: say-paul/greenboot
-          ref: greenboot-rs-continued
-          path: greenboot
-
       - name: Build greenboot PRM pakcages
         run: make rpm
         working-directory: greenboot
@@ -153,7 +150,7 @@ jobs:
       - name: Prepare greenboot
         run: |
           sudo mkdir -p /var/www/html/source
-          sudo cp ./greenboot/rpmbuild/RPMS/x86_64/* /var/www/html/source/ 2>/dev/null || :
+          sudo cp ./rpmbuild/RPMS/x86_64/* /var/www/html/source/ 2>/dev/null || :
           sudo createrepo_c /var/www/html/source
           sudo restorecon -Rv /var/www/html/source
           sudo ls -al /var/www/html/source
@@ -217,7 +214,7 @@ jobs:
 
       - name: Run greenboot-rs.sh test
         run: ./greenboot-rs.sh
-        working-directory: greenboot-test
+        working-directory: tests
         timeout-minutes: 100
 
       - name: Set result status
