@@ -1,0 +1,25 @@
+---
+name: branch workflow trigger test
+
+on:
+  issue_comment:
+    types:
+      - created
+
+jobs:
+  pr-info:
+    if: ${{ github.event.issue.pull_request &&
+            endsWith(github.event.comment.body, '/test-branch-trigger') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Show all environment variables
+        run: printenv
+      - name: Show system info
+        run: cat /etc/os-release
+      - name: Show system arch
+        run: |
+          uname -a
+          lscpu
+          free -mh
+          sleep 2h
