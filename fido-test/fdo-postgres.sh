@@ -1,6 +1,11 @@
 #!/bin/bash
 set -euox pipefail
 
+# Colorful output.
+function greenprint {
+    echo -e "\033[1;32m${1}\033[0m"
+}
+
 POSTGRES_IP=192.168.200.2
 FDO_MANUFACTURING_ADDRESS=192.168.200.50
 FDO_OWNER_ONBOARDING_ADDRESS=192.168.200.51
