@@ -36,7 +36,7 @@ sudo buildah images
 ##########################################################
 greenprint "🔧 Generate FDO key and configuration files"
 mkdir aio
-podman run -v "$PWD"/aio/:/aio:z \
+sudo podman run -v "$PWD"/aio/:/aio:z \
   "localhost/aio:latest" \
   aio --directory aio generate-configs-and-keys --contact-hostname "$FDO_MANUFACTURING_ADDRESS"
 
@@ -48,7 +48,15 @@ rm -f aio
 # Set servers store driver to postgres
 greenprint "🔧 Set servers store driver to postgres"
 sudo pip3 install yq
-/usr/local/bin/yq -iy '.service_info.diskencryption_clevis |= [{disk_label: "/dev/vda4", reencrypt: true, binding: {pin: "tpm2", config: "{}"}}]' fdo/serviceinfo-api-server.yml
+# Configure manufacturing server db
+yq -yi 'del(.ownership_voucher_store_driver.Directory)' test/fdo/manufacturing-server.yml
+yq -yi '.ownership_voucher_store_driver += {"Postgres": "Manufacturer"}' test/fdo/manufacturing-server.yml
+# Configure owner onboarding server db
+yq -yi 'del(.ownership_voucher_store_driver.Directory)' test/fdo/owner-onboarding-server.yml
+yq -yi '.ownership_voucher_store_driver += {"Postgres": "Owner"}' test/fdo/owner-onboarding-server.yml
+# Configure rendezvous server db
+yq -yi 'del(.storage_driver.Directory)' test/fdo/rendezvous-server.yml
+yq -yi '.storage_driver += {"Postgres": "Rendezvous"}' test/fdo/rendezvous-server.yml
 
 # Prepare postgres db init sql script
 greenprint "🔧 Prepare postgres db init sql script"
