@@ -1,0 +1,29 @@
+---
+name: fdo postgres db test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fdo-postgres:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v3
+
+      - name: Checkout db pr
+        uses: actions/checkout@v3
+        with:
+          repository: 7flying/fido-device-onboard-rs
+          ref: db-init
+          path: fido-device-onboard-rs
+
+      - name: Copy file into fido-device-onboard-rs folder
+        run: |
+          cp fido-test/fdo-postgres.sh fido-device-onboard-rs/test
+          cp fido-test/files/clients fido-device-onboard-rs/test/files
+
+      - name: Prepare greenboot
+        run: test/fdo-postgres.sh
+        working-directory: fido-device-onboard-rs
