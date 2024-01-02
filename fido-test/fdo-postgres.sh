@@ -36,9 +36,10 @@ sudo buildah images
 ##########################################################
 greenprint "🔧 Generate FDO key and configuration files"
 sudo mkdir aio
-sudo podman run -v "$PWD"/aio/:/aio:z \
-  "localhost/aio:latest" \
-  aio --directory aio generate-configs-and-keys --contact-hostname "$FDO_MANUFACTURING_ADDRESS"
+sudo podman run --rm \
+    -v "$PWD"/aio/:/aio:z \
+    "localhost/aio:latest" \
+    aio --directory aio generate-configs-and-keys --contact-hostname "$FDO_MANUFACTURING_ADDRESS"
 
 # Prepare FDO config files
 greenprint "🔧 Prepare FDO key and configuration files for FDO containers"
@@ -117,12 +118,79 @@ until [ "$(curl -X POST http://${FDO_RENDEZVOUS_ADDRESS}:8082/ping)" == "pong" ]
     sleep 1;
 done;
 
+
+greenprint "🔧 Check container running status"
+sudo podman ps -a
+
+greenprint "🔧 Collecting container logs"
+sudo podman logs postgres manufacture-server owner-onboarding-server rendezvous-server
+
 greenprint "🔧 Check db tables"
-sudo podman run exec \
+sudo podman exec \
     postgres \
     psql \
     --username="${POSTGRES_USERNAME}" \
-    -c "\dt"
+    -c "\dt" | grep "3 rows"
 
-rm -rf initdb
+greenprint "🔧 Generate OV"
+sudo podman run \
+    --rm \
+    --network edge \
+    --privileged \
+    localhost/clients \
+    fdo-manufacturing-client no-plain-di --insecure --manufacturing-server-url "http://${FDO_MANUFACTURING_ADDRESS}:8080"
+
+greenprint "🔧 Check manufacturing server db for new OV"
+sudo podman exec \
+    postgres \
+    psql \
+    --username="${POSTGRES_USERNAME}" \
+    -c "SELECT * FROM manufacturer_vouchers ;" | grep "1 row"
+
+greenprint "🔧 Check container running status"
+sudo podman ps -a
+
+greenprint "🔧 Export OV"
+mkdir export-ov
+sudo podman run \
+    --rm \
+    --network edge \
+    --privileged \
+    -v "$PWD"/export-ov:/export-ov:z \
+    localhost/clients \
+    fdo-owner-tool export-manufacturer-vouchers postgres "postgresql://${POSTGRES_USERNAME}:${POSTGRES_PASSWORD}@${POSTGRES_IP}/${POSTGRES_DB}" /export-ov/ | grep "exported"
+EXPORTED_FILE=$(ls -1 export-ov)
+greenprint "🔧 Import OV into owner db"
+sudo podman run \
+    --rm \
+    --network edge \
+    --privileged \
+    -v "$PWD"/export-ov:/export-ov:z \
+    localhost/clients \
+    fdo-owner-tool import-ownership-vouchers postgres "postgresql://${POSTGRES_USERNAME}:${POSTGRES_PASSWORD}@${POSTGRES_IP}/${POSTGRES_DB}" "/export-ov/${EXPORTED_FILE}" | grep "OV import finished"
+
+greenprint "🔧 Check owner db for imported OV"
+sudo podman exec \
+    postgres \
+    psql \
+    --username="${POSTGRES_USERNAME}" \
+    -c "SELECT * FROM owner_vouchers ;" | grep "1 row"
+
+greenprint "🔧 Sleep 60 seconds to sync with rendezvous db"
+sleep 60
+
+greenprint "🔧 Check rendezvous db for synced OV"
+sudo podman exec \
+    postgres \
+    psql \
+    --username="${POSTGRES_USERNAME}" \
+    -c "SELECT * FROM rendezvous_vouchers ;" | grep "1 row"
+
+greenprint "🔧 Check container running status"
+sudo podman ps -a
+
+greenprint "🔧 Collecting container logs"
+sudo podman logs rendezvous-server
+
+rm -rf initdb export-ov
 exit 0
