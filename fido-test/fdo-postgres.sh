@@ -35,15 +35,15 @@ sudo buildah images
 ##
 ##########################################################
 greenprint "🔧 Generate FDO key and configuration files"
-mkdir aio
+sudo mkdir aio
 sudo podman run -v "$PWD"/aio/:/aio:z \
   "localhost/aio:latest" \
   aio --directory aio generate-configs-and-keys --contact-hostname "$FDO_MANUFACTURING_ADDRESS"
 
 # Prepare FDO config files
 greenprint "🔧 Prepare FDO key and configuration files for FDO containers"
-cp -r aio/keys fdo/
-rm -f aio
+sudo cp -r aio/keys test/fdo/
+sudo rm -rf aio
 
 # Set servers store driver to postgres
 greenprint "🔧 Set servers store driver to postgres"
@@ -79,7 +79,7 @@ sudo podman run -d \
   --ip "$FDO_MANUFACTURING_ADDRESS" \
   --name manufacture-server \
   --network edge \
-  -v "$PWD"/fdo/:/etc/fdo/:z \
+  -v "$PWD"/test/fdo/:/etc/fdo/:z \
   -p 8080:8080 \
   -e POSTGRES_MANUFACTURER_DATABASE_URL="postgresql://${POSTGRES_USERNAME}:${POSTGRES_PASSWORD}@${POSTGRES_IP}/${POSTGRES_DB}" \
   "localhost/manufacturing-server:latest"
@@ -89,7 +89,7 @@ sudo podman run -d \
   --ip "$FDO_OWNER_ONBOARDING_ADDRESS" \
   --name owner-onboarding-server \
   --network edge \
-  -v "$PWD"/fdo/:/etc/fdo/:z \
+  -v "$PWD"/test/fdo/:/etc/fdo/:z \
   -p 8081:8081 \
   -e POSTGRES_OWNER_DATABASE_URL="postgresql://${POSTGRES_USERNAME}:${POSTGRES_PASSWORD}@${POSTGRES_IP}/${POSTGRES_DB}" \
   "localhost/owner-onboarding-server:latest"
@@ -99,7 +99,7 @@ sudo podman run -d \
   --ip "$FDO_RENDEZVOUS_ADDRESS" \
   --name rendezvous-server \
   --network edge \
-  -v "$PWD"/fdo/:/etc/fdo/:z \
+  -v "$PWD"/test/fdo/:/etc/fdo/:z \
   -p 8082:8082 \
   -e POSTGRES_RENDEZVOUS_DATABASE_URL="postgresql://${POSTGRES_USERNAME}:${POSTGRES_PASSWORD}@${POSTGRES_IP}/${POSTGRES_DB}" \
   "localhost/rendezvous-server:latest"
@@ -116,6 +116,13 @@ done;
 until [ "$(curl -X POST http://${FDO_RENDEZVOUS_ADDRESS}:8082/ping)" == "pong" ]; do
     sleep 1;
 done;
+
+greenprint "🔧 Check db tables"
+sudo podman run exec \
+    postgres \
+    psql \
+    --username="${POSTGRES_USERNAME}" \
+    -c "\dt"
 
 rm -rf initdb
 exit 0
