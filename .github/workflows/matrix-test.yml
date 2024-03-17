@@ -1,0 +1,45 @@
+---
+name: Matrix test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-matrix:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      matrix:
+        arch: [x86_64, aarch64]
+        image_type: [ami, qcow2, vmdk]
+        build_arch: [x86_64, aarch64]
+        exclude:
+          - arch: aarch64
+            image_type: vmdk
+          - image_type: vmdk
+            build_arch: aarch64
+          - image_type: qcow2
+            arch: x86_64
+            build_arch: aarch64
+          - image_type: qcow2
+            arch: aarch64
+            build_arch: x86_64
+        include:
+          - image_type: ami
+            platform: aws
+          - image_type: qcow2
+            platform: libvirt
+          - image_type: vmdk
+            platform: vsphere
+    steps:
+      - name: Check variables
+        run: |
+          echo "ARCH: $ARCH"
+          echo "IMAGE_TYPE: $IMAGE_TYPE"
+          echo "BUILD_ARCH: $BUILD_ARCH"
+          echo "PLATFORM: $PLATFORM"
+        env:
+          ARCH: ${{ matrix.arch }}
+          IMAGE_TYPE: ${{ matrix.image_type }}
+          BUILD_ARCH: ${{ matrix.build_arch }}
+          PLATFORM: ${{ matrix.platform }}
